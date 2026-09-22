@@ -1,0 +1,45 @@
+name: aquapoint-backend
+
+services:
+  server:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: aquapoint
+      DB_PASSWORD: aquapointTeam
+      DB_NAME: aquapoint
+      JWT_SECRET: aquapoint_team
+      API_PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: aquapoint
+      MARIADB_USER: aquapoint
+      MARIADB_PASSWORD: aquapointTeam
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "healthcheck.sh",
+          "--connect",
+          "--innodb_initialized"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mariadb-data:

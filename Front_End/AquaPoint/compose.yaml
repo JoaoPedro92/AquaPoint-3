@@ -1,0 +1,10 @@
+name: aquapoint-frontend
+
+services:
+  server:
+    build:
+      context: .
+    environment:
+      NODE_ENV: developement
+    ports:
+      - "5173:80"

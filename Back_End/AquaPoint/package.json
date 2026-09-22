@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node src/swagger.js && nodemon src/server.js"
+    "dev": "node src/swagger.js && nodemon src/server.js",
+    "start": "node src/swagger.js && node src/server.js"
   },
   "keywords": [],
   "author": "",
