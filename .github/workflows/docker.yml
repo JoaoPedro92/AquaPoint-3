@@ -28,7 +28,7 @@ jobs:
       - name: Build and Push Backend
         uses: docker/build-push-action@v6
         with:
-          context: ./Back_End
+          context: ./Back_End/AquaPoint
           push: true
           tags: |
             ghcr.io/joaopedro92/aquapoint-backend:latest
@@ -52,7 +52,7 @@ jobs:
       - name: Build and Push Frontend
         uses: docker/build-push-action@v6
         with:
-          context: ./Front_End
+          context: ./Front_End/AquaPoint
           push: true
           tags: |
             ghcr.io/joaopedro92/aquapoint-frontend:latest
