@@ -31,8 +31,8 @@ jobs:
           context: ./Back_End
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/aquapoint-backend:latest
-            ghcr.io/${{ github.repository_owner }}/aquapoint-backend:${{ github.sha }}
+            ghcr.io/joaopedro92/aquapoint-backend:latest
+            ghcr.io/joaopedro92/aquapoint-backend:${{ github.sha }}
 
   frontend:
     name: Build Frontend
@@ -55,5 +55,5 @@ jobs:
           context: ./Front_End
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/aquapoint-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/aquapoint-frontend:${{ github.sha }}
+            ghcr.io/joaopedro92/aquapoint-frontend:latest
+            ghcr.io/joaopedro92/aquapoint-frontend:${{ github.sha }}
