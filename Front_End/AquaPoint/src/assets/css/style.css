@@ -1,0 +1,284 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bs-body-font-family: 'Poppins', sans-serif;
+  --aquapoint-logo-blue: #4DA6AC; /* old #29aae1 */
+  --aquapoint-gray: #bababa;
+  --aquapoint-gray-hover: #9d9b9b;
+  --aquapoint-marker-blue: #29aae1;
+}
+
+body {
+  line-height: 1.6;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.nav-item .nav-link{
+    border: 2px solid #a8a7a7;
+    border-radius: 10px;
+    padding: 5px 30px !important;
+}
+
+.nav-item .nav-link.active{
+    border: 1px solid var(--aquapoint-logo-blue);
+    background-color: var(--aquapoint-logo-blue);
+}
+
+.nav-item .router-link-exact-active{
+  border: 1px solid var(--aquapoint-logo-blue) !important;
+  background-color: var(--aquapoint-logo-blue) !important;
+  color: white !important;
+  border-radius: 5px;
+  padding: 4px 10px;
+}
+
+.carousel-caption {
+    z-index: 2;
+    color: white !important;
+}
+
+.carousel-item img {
+    height: 600px;
+    object-fit: cover;
+}
+
+.carousel-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7));
+}
+
+.bg-orange{
+  background-color: #fd7302 !important;
+}
+
+.bg-aquapoint-gray {
+  background-color: var(--aquapoint-gray) !important;
+}
+
+.bg-aquapoint-blue {
+  background-color: var(--aquapoint-logo-blue) !important;
+}
+
+.btn.bg-aquapoint-gray:hover {
+  background-color: var(--aquapoint-gray-hover) !important;
+}
+
+.btn-outline-secondary.btn-file-input:hover{
+    background-color: var(--aquapoint-logo-blue);
+}
+
+
+.main-titles {
+    color: rgb(33,37,41);
+    font-size: 2.7vh;
+    font-weight: bold;
+}
+
+.spacer {
+    position: relative;
+    top: 0;
+    left: 0;
+    height: 3vh;
+    width: 100%;
+}
+
+.contact-form {
+  width: 95% !important;
+  height: 40px !important;
+  padding-left: 0.5vh !important;
+  padding-bottom: 1vh !important;
+}
+
+.edit-form {
+  width: 95% !important;
+  height: 40px !important;
+  padding-left: 0.5vh !important;
+  padding-bottom: 0.5vh !important;
+}
+
+.about-us-image {
+  position: relative;
+  width: 90%;
+  border-radius: 1.5vh;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  transition: 0.5s ease;
+}
+
+.about-us-image:hover {
+  transform: scale(1.03);
+}
+
+.edit-zone-image {
+  position: relative;
+  width: 90%;
+  border-radius: 1.5vh;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  transition: 0.5s ease;
+}
+
+.edit-zone-image:hover {
+  transform: scale(1.03);
+}
+
+.container-spacer {
+  margin-bottom: 5%;
+}
+
+.column-title {
+  color: rgb(33,37,41);
+  font-size: 2.3vh;
+}
+
+.column-desc {
+  font-size: 1.8vh;
+  margin-top: 5%;
+  color: rgb(33,37,41);
+}
+
+.about-us-image-feature {
+  position: relative;
+  width: 40%;
+  left: 25%;
+  border-radius: 1.5vh;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  transition: 0.5s ease;
+}
+
+.about-us-image-feature:hover {
+  transform: scale(1.05);
+}
+
+.partner {
+  position: relative;
+  display: inline-block;
+  left: 2%;
+  top: 5%;
+  width: 13%;
+  height: 13vh;
+  margin-right: 2%;
+  transition: 0.5s ease;
+}
+
+.partner:hover {
+  transform: scale(1.1);
+}
+
+.partner > img {
+  width: 45%;
+  position: absolute;
+  left: 25%;
+  cursor: pointer;
+}
+
+.hex-bg {
+    width: 20px;
+    height: 20px;
+    background-color: #af0202;
+    clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.map-wrapper{
+  display: flex;
+  justify-content: center;
+  margin-top: 8%;
+}
+
+.map-wrapper iframe{
+  max-width: 100%;
+}
+
+
+.user-profile-image{
+  display: block;
+  margin: 0 auto;
+  max-width: 65%;
+  height: auto;
+}
+
+.aquapoint-interaction {
+  position: relative;
+  display: inline-block;
+  left: 0;
+  top: 5%;
+  height: 330px;
+  margin-right: 2%;
+  transition: 0.5s ease;
+  margin-bottom: 2%;
+  background-color: rgb(208, 207, 207);
+  border-radius: 0.8vh;
+  overflow: hidden;
+  border: 1px solid gray;
+}
+
+@media (min-width: 992px) {
+  .aquapoint-interaction-col-lg-custom {
+    flex: 0 0 23%;
+    max-width: 23%;
+  }
+}
+
+.aquapoint-interaction:hover {
+  transform: scale(0.95);
+}
+
+.aquapoint-interaction > .imageArea {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 12vh;
+  overflow: hidden;
+}
+
+.aquapoint-interaction > .imageArea > img {
+  width: 100%;
+  position: absolute;
+  left: 0;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.aquapoint-interaction > h1 {
+  position: relative;
+  left: 5%;
+  top: 1.3vh;
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: black;
+}
+
+.aquapoint-interaction > span {
+  position: relative;
+  left: 5%;
+  top: 2vh;
+  font-size: 0.8rem;
+  color: black;
+}
+
+.Vue-Toastification__container {
+    margin-top: 70px !important;
+}
+
+@keyframes pulse {
+      0%   { transform: scale(1);    opacity: 1; }
+      50%  { transform: scale(1.2);  opacity: 0.6; }
+      100% { transform: scale(1);    opacity: 1; }
+}
