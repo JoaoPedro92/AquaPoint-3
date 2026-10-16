@@ -1,0 +1,12 @@
+# Configuração do Galera Cluster (igual nos dois nós)
+[mariadb]
+bind-address=0.0.0.0
+binlog_format=ROW
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2
+
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+wsrep_cluster_name=aquapoint_cluster
+wsrep_cluster_address=gcomm://db1,db2
+wsrep_sst_method=rsync

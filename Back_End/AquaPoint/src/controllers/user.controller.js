@@ -51,7 +51,7 @@ export async function createUser(req, res) {
 
     const[result] = await pool.query(
       'INSERT INTO users (name, email, dateBirth, city, profilePicture, passwordHash, isAdmin) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, dateBirth, city, profilePictureBlob, passwordBcrypt, isAdmin]
+      [name, email, String(dateBirth).slice(0, 10), city, profilePictureBlob, passwordBcrypt, isAdmin]
     )
 
     res.status(201).json({ message: 'User created successfully!', id: result.insertId})
@@ -92,7 +92,7 @@ export async function updateUser(req, res) {
 
     const[result] = await pool.query(
       'UPDATE users SET name = ?, email = ?, dateBirth = ?, city = ?, passwordHash = ?, profilePicture = ? WHERE id = ?',
-      [name, email, dateBirth, city, passwordHashed, profilePictureBlob, userId]
+      [name, email, String(dateBirth).slice(0, 10), city, passwordHashed, profilePictureBlob, userId]
     );
 
     res.json({ message: `User with ID: ${userId} updated successfully` });
