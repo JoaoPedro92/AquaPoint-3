@@ -5,7 +5,11 @@ const doc = {
     title: 'AquaPoint API',
     description: 'Documentação da API AquaPoint'
   },
-  host: 'localhost:3000'
+  servers: [
+    {
+      url: '/'
+    }
+  ]
 }
 
 const outputFile = './src/swagger.json'

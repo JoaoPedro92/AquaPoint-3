@@ -46,4 +46,6 @@ app.use("/api/states", statesRoutes);
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
+app.set('trust proxy', true);
+
 export default app;
