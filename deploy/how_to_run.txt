@@ -1,0 +1,14 @@
+Para correr os containers com as replicas etc
+tem de abrir esta pasta pelo vs code, abrir um novo terminal,
+de seguida colocar o nosso ficheiro .env aqui dentro da pasta deploy
+
+no terminal, façam os seguintes comandos (o DOCKER tem de estar aberto!):
+docker compose pull
+docker compose up -d
+
+Aguardem um pouco, especialmente se for primeira vez, ele cria a db etc atraves do ficheiro que esta no backend chamado backup.sql
+
+De seguida, quando estiver tudo verde e UP, abram este link:
+http://localhost:8080
+
+Feito.
