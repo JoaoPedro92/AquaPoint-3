@@ -3,7 +3,7 @@ name: aquapoint
 services:
   # Proxy: HTTP (frontend + backend) e TCP (base de dados)
   proxy:
-    image: nginx:alpine
+    image: nginx:1.28-alpine
     restart: unless-stopped
     ports:
       - "8080:80"
