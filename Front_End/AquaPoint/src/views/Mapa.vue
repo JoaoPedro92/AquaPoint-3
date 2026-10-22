@@ -145,15 +145,15 @@
                 <hr style="margin: 8px 0;">
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="../../src/assets/images/map-markers/favorite_working.png" style="height: 35px">
+                    <img :src="favoriteWorkingImg" style="height: 35px">
                     <span style="font-size: 13px; color: #555;">Favorito Funcional</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="../../src/assets/images/map-markers/favorite_not_working.png" style="height: 35px">
+                    <img :src="favoriteNotWorkingImg" style="height: 35px">
                     <span style="font-size: 13px; color: #555;">Favorito Avariado</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="../../src/assets/images/map-markers/favorite_broken.png" style="height: 35px">
+                    <img :src="favoriteBrokenImg" style="height: 35px">
                     <span style="font-size: 13px; color: #555;">Favorito Inativo</span>
                 </div>
 
@@ -259,7 +259,10 @@
     import { point } from 'leaflet';
     import { favoriteService } from '../services/favoriteService';
     import AquapointDetailsModal from '../components/AquapointDetailsModal.vue';
-
+    
+    import favoriteWorkingImg from '../assets/images/map-markers/favorite_working.png'
+    import favoriteBrokenImg from '../assets/images/map-markers/favorite_broken.png'
+    import favoriteNotWorkingImg from '../assets/images/map-markers/favorite_not_working.png'
 
     const useModal = useModalStore()
     const Auth = useAuth()
@@ -499,14 +502,14 @@
         let markerIcon = getMarkerIcon(markerColor)
 
         if (userFavoritePoints.value.find(p => p.point_id === point.id)) {
-            let image = '../../src/assets/images/map-markers/favorite_working.png'
+            let image = favoriteWorkingImg
 
             if (point.state_name == 'Inativo') {
-                image = '../../src/assets/images/map-markers/favorite_broken.png'
+                image = favoriteBrokenImg
             } else if (point.state_name == 'Necessita manutenção') {
-                image = '../../src/assets/images/map-markers/favorite_not_working.png'
+                image = favoriteNotWorkingImg
             } else {
-                image = '../../src/assets/images/map-markers/favorite_working.png'
+                image = favoriteWorkingImg
             }
 
             markerIcon = L.icon({
