@@ -1,6 +1,7 @@
 import { pool } from "../db.js";
 import { findUserById } from "./user.controller.js";
 import { findFavoritesByUserId } from "./favorites.controller.js";
+import { predictFountain } from "../ai/bebedouroModel.js";
 
 
 // GET /aquapoints
@@ -104,6 +105,17 @@ export async function createAquapoint(req, res){
     aquaPointPictureBlob = Buffer.from(image.split(',')[1], 'base64')
   }
 
+  if (aquaPointPictureBlob) {
+    try {
+      const { prob, isBebedouro } = await predictFountain(aquaPointPictureBlob)
+      if (!isBebedouro) {
+        return res.status(400).json({ error: 'A imagem não parece ser um bebedouro. Tente outra foto.', prob })
+      }
+    } catch (err) {
+      return res.status(400).json({ error: 'Não foi possível ler a imagem.' })
+    }
+  }
+
   try{
     const[result] = await pool.query(
       'INSERT INTO aqua_points (point_name, image, point_type, point_trust, local_id, state_id, latitude, longitude, createdBy, isPending) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -114,6 +126,21 @@ export async function createAquapoint(req, res){
   }
   catch(err){
     return res.status(500).json({ error: err.message })
+  }
+}
+
+// POST /aquapoints/check-image
+export async function checkAquapointImage(req, res) {
+  const { image } = req.body
+  if (typeof image !== 'string' || !image.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'Imagem inválida' })
+  }
+  try {
+    const buffer = Buffer.from(image.split(',')[1], 'base64')
+    const { prob, isBebedouro } = await predictFountain(buffer)
+    res.json({ isBebedouro, prob })
+  } catch (err) {
+    res.status(400).json({ error: 'Não foi possível ler a imagem.' })
   }
 }
 

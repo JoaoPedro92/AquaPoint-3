@@ -195,6 +195,16 @@
                     <button class="btn btn-outline-secondary btn-file-input w-100" @click="fileInput.click()">
                         <i class="bi bi-upload me-2"></i>Escolher ficheiro
                     </button>
+
+                    <small v-if="imageCheck === 'verifying'" class="text-muted d-block mt-2">
+                        <span class="spinner-border spinner-border-sm me-1"></span>A verificar imagem...
+                    </small>
+                    <small v-else-if="imageCheck === 'ok'" class="text-success d-block mt-2">
+                        <i class="bi bi-check-circle me-1"></i>Parece um bebedouro
+                    </small>
+                    <small v-else-if="imageCheck === 'failed'" class="text-danger d-block mt-2">
+                        <i class="bi bi-x-circle me-1"></i>Não parece um bebedouro. Escolha outra foto.
+                    </small>
                 </div>
                 <!----------------------------->
 
@@ -215,7 +225,7 @@
             </div>
 
             <div class="d-flex justify-content-center mt-5">
-                <button class="btn btn-success shadow-sm" style="width: 60%" v-on:click="SubmitNewAquapoint">SUBMETER</button>
+                <button class="btn btn-success shadow-sm" style="width: 60%" :disabled="imageCheck !== 'ok'" v-on:click="SubmitNewAquapoint">SUBMETER</button>
             </div>
         </div>
     </div>
@@ -267,8 +277,8 @@
     const fileInput = ref(null)
     const fileName = ref('')
     const newAquapointImagePreview = ref(null)
+    const imageCheck = ref(null)
     const newAquapointName = ref('')
-    const offcanvasClosedBySubmitButton = ref(false)
     const aquapointsList = ref([])
     const localValue = ref('')
     const loadingMarkers = ref(false)
@@ -654,21 +664,30 @@
         newAquapointState.value = 1
         newAquapointName.value = null
         newAquapointImagePreview.value = null
+        imageCheck.value = null
         localValue.value = ''
     }
 
     function onFileChange(e) {
         const file = e.target.files[0]
         if(!file) return
-        
+
         fileName.value = file.name
         const reader = new FileReader()
-        reader.onload = (e) => {
-            newAquapointImagePreview.value = e.target.result
+        reader.onload = async (ev) => {
+            newAquapointImagePreview.value = ev.target.result
+            imageCheck.value = 'verifying'
+            try {
+                const { data } = await aquapointService.checkImage(ev.target.result)
+                imageCheck.value = data.isBebedouro ? 'ok' : 'failed'
+                //if (!data.ehBebedouro) toast.error('A imagem não parece ser um bebedouro. Escolha outra foto.')
+            } catch (err) {
+                imageCheck.value = 'failed'
+                //toast.error(err.response?.data?.error || 'Não foi possível verificar a imagem.')
+            }
         }
         reader.readAsDataURL(file)
-        
-    }   
+    }
 
     async function SubmitNewAquapoint(){
         if (!newAquapointName.value || newAquapointName.value.trim() === ''){
@@ -715,6 +734,7 @@
 
         loadingMarkers.value = true
         newPoint.id = await AddNewAquaPoint(newPoint)
+        if(!newPoint.id) return
         AddMarkerToMap(newPoint)
         loadingMarkers.value = false
 
@@ -796,6 +816,7 @@
                 return createdPoint.data.id
             }
         } catch (err) {
+            //toast.error(err.response?.data?.error || 'Erro ao criar o bebedouro.')
             console.log("Status:", err.response?.status)
             console.log("Data:", err.response?.data)
             console.log("Headers:", err.response?.headers)

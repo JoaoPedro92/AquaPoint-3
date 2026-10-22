@@ -1,4 +1,6 @@
 import app from "./app.js";
+import { loadModel } from "./ai/bebedouroModel.js"
 
 const PORT = process.env.PORT || 3000;
+await loadModel();
 app.listen(PORT, () => console.log(`API a correr em http://localhost:${PORT}`));
