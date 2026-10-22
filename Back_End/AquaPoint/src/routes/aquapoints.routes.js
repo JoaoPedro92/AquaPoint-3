@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllAquapoints, getAquaPointById, getUserFavoritePoints, getCountPendingAquapoints, getPendingPoints, createAquapoint, updateAquapoint, changeAquapointState, changeTrustLevel, deleteAquapoint } from "../controllers/aquapoints.controller.js";
+import { getAllAquapoints, getAquaPointById, getUserFavoritePoints, getCountPendingAquapoints, getPendingPoints, createAquapoint, checkAquapointImage, updateAquapoint, changeAquapointState, changeTrustLevel, deleteAquapoint } from "../controllers/aquapoints.controller.js";
 
 const router = Router();
 
@@ -9,6 +9,7 @@ router.get("/pending-points-count", getCountPendingAquapoints);
 router.get("/:id", getAquaPointById);  
 router.get("/user/:id/favorites", getUserFavoritePoints);
 router.post("/", createAquapoint);
+router.post("/check-image", checkAquapointImage);
 router.put("/:id", updateAquapoint);
 router.put("/:id/change-state", changeAquapointState);
 router.put("/:id/change-trust-level", changeTrustLevel)

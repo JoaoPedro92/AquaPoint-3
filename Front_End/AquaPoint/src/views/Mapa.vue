@@ -145,15 +145,15 @@
                 <hr style="margin: 8px 0;">
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="/src/assets/images/map-markers/favorite_working.png" style="height: 35px">
+                    <img src="../../src/assets/images/map-markers/favorite_working.png" style="height: 35px">
                     <span style="font-size: 13px; color: #555;">Favorito Funcional</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="/src/assets/images/map-markers/favorite_not_working.png" style="height: 35px">
+                    <img src="../../src/assets/images/map-markers/favorite_not_working.png" style="height: 35px">
                     <span style="font-size: 13px; color: #555;">Favorito Avariado</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="/src/assets/images/map-markers/favorite_broken.png" style="height: 35px">
+                    <img src="../../src/assets/images/map-markers/favorite_broken.png" style="height: 35px">
                     <span style="font-size: 13px; color: #555;">Favorito Inativo</span>
                 </div>
 
@@ -499,14 +499,14 @@
         let markerIcon = getMarkerIcon(markerColor)
 
         if (userFavoritePoints.value.find(p => p.point_id === point.id)) {
-            let image = 'src/assets/images/map-markers/favorite_working.png'
+            let image = '../../src/assets/images/map-markers/favorite_working.png'
 
             if (point.state_name == 'Inativo') {
-                image = 'src/assets/images/map-markers/favorite_broken.png'
+                image = '../../src/assets/images/map-markers/favorite_broken.png'
             } else if (point.state_name == 'Necessita manutenção') {
-                image = 'src/assets/images/map-markers/favorite_not_working.png'
+                image = '../../src/assets/images/map-markers/favorite_not_working.png'
             } else {
-                image = 'src/assets/images/map-markers/favorite_working.png'
+                image = '../../src/assets/images/map-markers/favorite_working.png'
             }
 
             markerIcon = L.icon({
