@@ -9,6 +9,7 @@ services:
       - "8080:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - proxy-logs:/var/log/nginx/shared
     depends_on:
       frontend:
         condition: service_started
@@ -35,6 +36,23 @@ services:
     restart: unless-stopped
     deploy:
       replicas: 2
+
+  # Painel de monitorização em http://localhost:8081
+  # Usa a imagem do backend só porque já traz o Node.js e o mysql2
+  monitor:
+    image: ghcr.io/joaopedro92/aquapoint-backend:latest
+    restart: unless-stopped
+    user: root
+    command: ["node", "/monitor/server.cjs"]
+    environment:
+      NODE_PATH: /usr/src/app/node_modules
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    ports:
+      - "8081:4000"
+    volumes:
+      - ./monitor:/monitor:ro
+      - proxy-logs:/logs
+      - /var/run/docker.sock:/var/run/docker.sock
 
   # Nó 1 do cluster Galera: cria o cluster e importa o backup.sql
   db1:
@@ -88,3 +106,4 @@ services:
 volumes:
   db1-data:
   db2-data:
+  proxy-logs:

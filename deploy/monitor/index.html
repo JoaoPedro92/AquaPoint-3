@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor do AquaPoint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<style>F
+  :root {
+    --bg: #EAF1F0;
+    --surface: #F7FAF9;
+    --ink: #12323D;
+    --muted: #5B7680;
+    --line: #C9D9DA;
+    --pipe: #2A7FA0;
+    --ok: #2F8F5B;
+    --warn: #B7801A;
+    --bad: #B9443A;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E1D22;
+      --surface: #14272D;
+      --ink: #DCEBEA;
+      --muted: #8FA9AE;
+      --line: #24414A;
+      --pipe: #5AB3D1;
+      --ok: #5BC28A;
+      --warn: #E0A93E;
+      --bad: #E66D62;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 750;
+    font-stretch: 125%;
+    letter-spacing: -0.01em;
+  }
+  .live { color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .live .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+  .live.stale .dot { background: var(--bad); }
+
+  h2 { font-size: 17px; font-weight: 700; font-stretch: 110%; margin: 0 0 12px; }
+
+  /* Diagrama: o elemento principal da página */
+  .flow { margin: 22px 0 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+  .flow svg { width: 100%; height: auto; display: block; }
+  .flow .caption { color: var(--muted); font-size: 13px; padding: 4px 12px 8px; }
+  .pipe { fill: none; stroke: var(--pipe); stroke-linecap: round; opacity: .85; }
+  .pipe.idle { opacity: .25; }
+  .pipe.db { stroke-dasharray: 6 6; }
+  .pipe.base { opacity: .35; }
+  .pipe.flow-line { stroke: var(--surface); opacity: .9; stroke-dasharray: 3 12; animation: run 1s linear infinite; }
+  @keyframes run { to { stroke-dashoffset: -15; } }
+  @media (prefers-reduced-motion: reduce) { .pipe.flow-line { animation: none; } }
+  .node rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+  .node.ok rect { stroke: var(--ok); }
+  .node.warn rect { stroke: var(--warn); }
+  .node.bad rect { stroke: var(--bad); stroke-dasharray: 4 3; }
+  .node text { fill: var(--ink); font-family: inherit; }
+  .node .sub { fill: var(--muted); font-size: 12px; }
+  .node circle.ok { fill: var(--ok); } .node circle.warn { fill: var(--warn); } .node circle.bad { fill: var(--bad); }
+  .group-label { fill: var(--muted); font-size: 13px; font-family: inherit; }
+
+  .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 14px; }
+
+  .numbers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; margin-bottom: 18px; }
+  .numbers div b { display: block; font-size: 26px; font-weight: 700; font-stretch: 115%; line-height: 1.1; }
+  .numbers div span { color: var(--muted); font-size: 13px; }
+
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.uri { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+
+  .badge { display: inline-flex; align-items: center; gap: 6px; }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .ok-t { color: var(--ok); } .warn-t { color: var(--warn); } .bad-t { color: var(--bad); }
+
+  button {
+    font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  button:hover { border-color: var(--pipe); }
+  button:focus-visible { outline: 2px solid var(--pipe); outline-offset: 2px; }
+  button[disabled] { opacity: .5; cursor: wait; }
+  button.danger { color: var(--bad); }
+
+  .db-node { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .db-node:last-child { border-bottom: 0; }
+  .db-node small { color: var(--muted); display: block; }
+
+  .bars { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--line); margin: 6px 0 4px; }
+  .bars span { display: block; height: 100%; }
+  .legend { color: var(--muted); font-size: 13px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+  .message { margin-top: 12px; color: var(--bad); min-height: 1.5em; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .stack > section + section { margin-top: 24px; }
+  .full { margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Fluxo de Pedidos do AquaPoint</h1>
+    <div class="live" id="live"><span class="dot"></span><span id="liveText">A ligar…</span></div>
+  </header>
+
+  <div class="flow">
+    <svg id="diagram" viewBox="0 0 880 400" role="img" aria-label="Diagrama do tráfego entre o proxy, as réplicas e a base de dados"></svg>
+  </div>
+
+  <div class="grid">
+    <section>
+      <h2>Containers</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Nome</th><th>Estado</th><th>IP</th><th></th></tr></thead>
+        <tbody id="containers"></tbody>
+      </table></div>
+      <div class="message" id="message" role="status"></div>
+    </section>
+
+    <div class="stack">
+      <section>
+        <h2>Pedidos</h2>
+        <div class="numbers">
+          <div><b id="nMinute">0</b><span>no último minuto</span></div>
+          <div><b id="nAvg">0 ms</b><span>tempo médio de resposta</span></div>
+          <div><b id="nErrors">0</b><span>erros 5xx no último minuto</span></div>
+          <div><b id="nTotal">0</b><span>no histórico guardado</span></div>
+        </div>
+        <div class="bars" id="statusBars"></div>
+        <div class="legend" id="statusLegend"></div>
+      </section>
+
+      <section>
+        <h2>Base de dados</h2>
+        <div id="dbNodes"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="full">
+    <div class="section-head">
+      <h2>Últimos pedidos</h2>
+      <button id="clearLogs">Limpar histórico</button>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Hora</th><th>Pedido</th><th>Resposta</th><th>Réplica</th><th>Tempo</th></tr></thead>
+      <tbody id="recent"></tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shortName = (n) => String(n || '').replace(/^aquapoint-/, '');
+let lastOk = 0;
+
+function level(c) {
+  if (!c) return 'bad';
+  if (c.state !== 'running') return c.state === 'restarting' ? 'warn' : 'bad';
+  if (c.health === 'unhealthy') return 'bad';
+  if (c.health === 'health: starting') return 'warn';
+  return 'ok';
+}
+function stateText(c) {
+  if (c.state === 'running') {
+    if (c.health === 'healthy') return 'a correr, saudável';
+    if (c.health === 'health: starting') return 'a arrancar';
+    if (c.health === 'unhealthy') return 'com problemas';
+    return 'a correr';
+  }
+  return { exited: 'parado', restarting: 'a reiniciar', created: 'criado', paused: 'em pausa' }[c.state] || c.state;
+}
+const statusClass = (s) => (s >= 500 ? 'bad-t' : s >= 400 ? 'warn-t' : 'ok-t');
+
+// ---------- Diagrama ----------
+function nodeSvg(x, y, title, sub, lvl) {
+  return `<g class="node ${lvl}" transform="translate(${x - 85},${y - 22})">
+    <rect width="170" height="44" rx="8"></rect>
+    <circle class="${lvl}" cx="16" cy="22" r="5"></circle>
+    <text x="30" y="19" font-size="14" font-weight="600">${esc(title)}</text>
+    <text class="sub" x="30" y="35">${esc(sub)}</text>
+  </g>`;
+}
+function curve(x1, y1, x2, y2) {
+  const mx = (x1 + x2) / 2;
+  return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+}
+
+function drawDiagram(data) {
+  const byService = (s) => data.containers.filter((c) => c.service === s);
+  const proxy = byService('proxy')[0];
+  const fronts = byService('frontend');
+  const backs = byService('backend');
+  const dbs = data.db;
+
+  const P = { x: 110, y: 200 };
+  const midX = 430, dbX = 760;
+  const frontY = fronts.map((_, i) => 64 + i * 58);
+  const backTop = 64 + Math.max(fronts.length, 1) * 58 + 34;
+  const backY = backs.map((_, i) => backTop + i * 58);
+  const dbY = dbs.map((_, i) => 210 + i * 78);
+
+  const replicas = [...fronts.map((c, i) => ({ c, y: frontY[i] })), ...backs.map((c, i) => ({ c, y: backY[i] }))];
+  const max = Math.max(1, ...replicas.map((r) => data.perReplica[r.c.name] || 0));
+
+  // Nó da base de dados que tem as ligações dos backends (o "ativo")
+  const online = dbs.filter((d) => d.online);
+  const active = online.length ? online.reduce((a, b) => (b.connections > a.connections ? b : a)) : null;
+
+  let pipes = '', nodes = '';
+  replicas.forEach((r) => {
+    const n = data.perReplica[r.c.name] || 0;
+    const w = n ? 2 + (n / max) * 12 : 1.5;
+    const d = curve(P.x + 85, P.y, midX - 85, r.y);
+    if (n) {
+      pipes += `<path class="pipe base" stroke-width="${w.toFixed(1)}" d="${d}"></path>`;
+      pipes += `<path class="pipe flow-line" stroke-width="2" d="${d}"></path>`;
+    } else {
+      pipes += `<path class="pipe idle" stroke-width="1.5" d="${d}"></path>`;
+    }
+    nodes += nodeSvg(midX, r.y, shortName(r.c.name), `${n} pedidos/min`, level(r.c));
+  });
+
+  if (active) {
+    const ai = dbs.indexOf(active);
+    backs.forEach((c, i) => {
+      if (c.state !== 'running') return;
+      pipes += `<path class="pipe db" stroke-width="2" d="${curve(midX + 85, backY[i], dbX - 85, dbY[ai])}"></path>`;
+    });
+  }
+
+  dbs.forEach((d, i) => {
+    const lvl = !d.online ? 'bad' : d.state === 'Synced' ? 'ok' : 'warn';
+    const sub = d.online ? `${d.state}, ${d.connections} ligações` : 'sem resposta';
+    nodes += nodeSvg(dbX, dbY[i], d.node, sub, lvl);
+  });
+
+  nodes += nodeSvg(P.x, P.y, 'proxy', `${data.totals.lastMinute} pedidos/min`, level(proxy));
+
+  const labels = `
+    <text class="group-label" x="${midX - 85}" y="${frontY[0] - 32}">Site</text>
+    <text class="group-label" x="${midX - 85}" y="${backTop - 32}">API</text>
+    <text class="group-label" x="${dbX - 85}" y="${dbY[0] - 32}">Base de dados</text>`;
+
+  const height = Math.max(backY[backY.length - 1] || 300, dbY[dbY.length - 1] || 300) + 50;
+  const svg = $('diagram');
+  svg.setAttribute('viewBox', `0 0 880 ${height}`);
+  svg.innerHTML = pipes + labels + nodes;
+}
+
+// ---------- Tabelas e números ----------
+function render(data) {
+  drawDiagram(data);
+
+  $('containers').innerHTML = data.containers.map((c) => {
+    const lvl = level(c);
+    const running = c.state === 'running';
+    const btn = c.protected ? '' :
+      `<button data-id="${c.id}" data-verb="${running ? 'stop' : 'start'}" class="${running ? 'danger' : ''}">${running ? 'Parar' : 'Iniciar'}</button>`;
+    return `<tr><td>${esc(shortName(c.name))}</td><td><span class="badge ${lvl}-t">${esc(stateText(c))}</span></td><td>${esc(c.ip || '–')}</td><td>${btn}</td></tr>`;
+  }).join('') || `<tr><td colspan="4">Não foi possível ler os containers. ${esc(data.dockerError || '')}</td></tr>`;
+
+  $('nMinute').textContent = data.totals.lastMinute;
+  $('nAvg').textContent = `${Math.round(data.totals.avgTimeLastMinute * 1000)} ms`;
+  $('nErrors').textContent = data.totals.errorsLastMinute;
+  $('nTotal').textContent = data.totals.logged;
+
+  const g = data.statusGroups, sum = Object.values(g).reduce((a, b) => a + b, 0) || 1;
+  const colors = { '2xx': 'var(--ok)', '3xx': 'var(--pipe)', '4xx': 'var(--warn)', '5xx': 'var(--bad)' };
+  $('statusBars').innerHTML = Object.entries(g).map(([k, v]) => `<span style="width:${(v / sum) * 100}%;background:${colors[k]}"></span>`).join('');
+  $('statusLegend').innerHTML = Object.entries(g).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
+
+  $('dbNodes').innerHTML = data.db.map((d) => {
+    if (!d.online) return `<div class="db-node"><div>${esc(d.node)}<small>Sem resposta (${esc(d.error)})</small></div><span class="badge bad-t">desligado</span></div>`;
+    const lvl = d.state === 'Synced' ? 'ok' : 'warn';
+    return `<div class="db-node"><div>${esc(d.node)}<small>Cluster com ${d.clusterSize} nó${d.clusterSize === 1 ? '' : 's'}, ${d.connections} ligações ativas</small></div><span class="badge ${lvl}-t">${esc(d.state === 'Synced' ? 'sincronizado' : d.state)}</span></div>`;
+  }).join('');
+
+  $('recent').innerHTML = data.recent.map((r) => {
+    const time = new Date(r.t * 1000).toLocaleTimeString('pt-PT');
+    return `<tr><td>${time}</td><td class="uri" title="${esc(r.uri)}">${esc(r.method)} ${esc(r.uri)}</td><td class="${statusClass(r.status)}">${r.status}</td><td>${esc(shortName(r.replica) || '–')}</td><td>${Math.round(r.rt * 1000)} ms</td></tr>`;
+  }).join('') || `<tr><td colspan="5">Ainda não há pedidos. Abre a app em localhost:8080 para gerar tráfego.</td></tr>`;
+}
+
+async function refresh() {
+  try {
+    const res = await fetch('/api/stats');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    render(await res.json());
+    lastOk = Date.now();
+  } catch (e) {
+    $('message').textContent = `O monitor não respondeu: ${e.message}`;
+  }
+  const age = Math.round((Date.now() - lastOk) / 1000);
+  $('live').classList.toggle('stale', !lastOk || age > 6);
+  $('liveText').textContent = lastOk ? (age < 3 ? 'Atualizado agora' : `Atualizado há ${age} s`) : 'Sem ligação ao monitor';
+}
+
+async function post(url) {
+  const res = await fetch(url, { method: 'POST' });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+}
+
+$('containers').addEventListener('click', async (ev) => {
+  const btn = ev.target.closest('button[data-id]');
+  if (!btn) return;
+  btn.disabled = true;
+  $('message').textContent = '';
+  try {
+    await post(`/api/containers/${btn.dataset.id}/${btn.dataset.verb}`);
+  } catch (e) {
+    $('message').textContent = e.message;
+  }
+  refresh();
+});
+
+$('clearLogs').addEventListener('click', async () => {
+  try { await post('/api/logs/clear'); } catch (e) { $('message').textContent = e.message; }
+  refresh();
+});
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
