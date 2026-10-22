@@ -3,6 +3,8 @@
 node_modules/
 .vite/
 
+*.sh text eol=lf
+
 # Environment variables
 
 .env

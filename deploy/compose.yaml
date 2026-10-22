@@ -59,7 +59,7 @@ services:
     image: mariadb:11.8
     restart: unless-stopped
     hostname: db1
-    entrypoint: ["bash", "/usr/local/bin/galera-start.sh"]
+    entrypoint: ["bash", "-c", "tr -d '\\r' < /usr/local/bin/galera-start.sh > /tmp/galera-start.sh && exec bash /tmp/galera-start.sh"]
     environment:
       GALERA_BOOTSTRAP: "1"
       GALERA_PEER: db2
@@ -84,7 +84,7 @@ services:
     image: mariadb:11.8
     restart: unless-stopped
     hostname: db2
-    entrypoint: ["bash", "/usr/local/bin/galera-start.sh"]
+    entrypoint: ["bash", "-c", "tr -d '\\r' < /usr/local/bin/galera-start.sh > /tmp/galera-start.sh && exec bash /tmp/galera-start.sh"]
     environment:
       GALERA_BOOTSTRAP: "0"
       GALERA_PEER: db1

@@ -4,6 +4,7 @@ de seguida colocar o nosso ficheiro .env aqui dentro da pasta deploy
 
 no terminal, façam os seguintes comandos (o DOCKER tem de estar aberto!):
 docker compose pull
+docker compose down -v
 docker compose up -d
 
 Aguardem um pouco, especialmente se for primeira vez, ele cria a db etc atraves do ficheiro que esta no backend chamado backup.sql
