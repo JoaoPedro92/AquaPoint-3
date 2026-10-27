@@ -1,5 +1,3 @@
-// Monitor do AquaPoint: lê os logs do proxy, o estado dos containers (Docker)
-// e o estado do cluster Galera, e serve um painel em http://localhost:8081
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +10,6 @@ const ROOT_PW = process.env.DB_ROOT_PASSWORD;
 const DB_NODES = (process.env.DB_NODES || 'db1,db2').split(',');
 const PROTECTED = ['proxy', 'monitor']; // não se podem parar pelo painel
 
-// ---------- Docker (através do socket) ----------
 function docker(method, apiPath) {
   return new Promise((resolve, reject) => {
     const req = http.request({ socketPath: '/var/run/docker.sock', path: apiPath, method }, (res) => {
@@ -51,7 +48,6 @@ async function getContainers() {
     .sort((a, b) => a.service.localeCompare(b.service) || a.replica - b.replica);
 }
 
-// ---------- Logs do nginx ----------
 function readRecentLog(maxBytes = 1024 * 1024) {
   try {
     const { size } = fs.statSync(LOG_FILE);
@@ -69,7 +65,7 @@ function readRecentLog(maxBytes = 1024 * 1024) {
 }
 
 // ---------- Galera ----------
-// Uma pool por nó, reutilizada entre atualizações (evita abrir uma ligação nova a cada 2 s)
+
 const pools = {};
 function poolFor(node) {
   if (!pools[node]) {
@@ -184,4 +180,4 @@ http.createServer(async (req, res) => {
   } catch (e) {
     send(res, 500, { error: e.message });
   }
-}).listen(PORT, () => console.log(`Monitor a correr na porta ${PORT}`));
+}).listen(PORT, () => console.log(`Fluxo de dados a correr na porta ${PORT}`));
