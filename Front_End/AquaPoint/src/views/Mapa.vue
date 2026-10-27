@@ -264,7 +264,7 @@
     import favoriteBrokenImg from '../assets/images/map-markers/favorite_broken.png'
     import favoriteNotWorkingImg from '../assets/images/map-markers/favorite_not_working.png'
 
-    import newAquaPointImage from '../src/assets/images/add_new_point.png'
+    import newAquaPointImage from '../assets/images/add_new_point.png'
 
     const useModal = useModalStore()
     const Auth = useAuth()
