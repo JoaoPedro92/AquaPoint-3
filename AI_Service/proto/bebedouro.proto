@@ -1,0 +1,18 @@
+// Contrato entre o backend (cliente) e o ai-service (servidor).
+// É a única fonte de verdade da interface: alterar aqui e copiar
+// para Back_End/AquaPoint/proto/bebedouro.proto.
+syntax = "proto3";
+
+package aquapoint.ai.v1;
+
+service AquapointClassifier {
+  // Diz se o serviço está pronto (modelo carregado)
+  rpc Health (HealthRequest) returns (HealthResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool ready = 1;
+  string model_version = 2;
+}

@@ -1,0 +1,19 @@
+{
+  "name": "aquapoint-ai-service",
+  "version": "1.0.0",
+  "description": "Microserviço gRPC que diz se uma imagem é um bebedouro (CNN em TensorFlow.js)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "health": "node src/healthcheck.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/proto-loader": "^0.8.0",
+    "@tensorflow/tfjs": "^4.22.0",
+    "sharp": "^0.35.5"
+  }
+}
