@@ -1,3 +1,4 @@
+import os from 'node:os'
 import { grpc, AquapointClassifier } from './proto.js'
 import { loadModel, isModelLoaded, predictAquapoint, MODEL_VERSION } from './model/bebedouroModel.js'
 
@@ -23,6 +24,8 @@ const handlers = {
 
     try {
       const { prob, isBebedouro } = await predictAquapoint(image)
+      // O hostname identifica a réplica (útil para ver o balanceamento nos logs)
+      console.log(`[${os.hostname()}] Classify: prob=${prob.toFixed(4)} isBebedouro=${isBebedouro}`)
       callback(null, { prob, isBebedouro, modelVersion: MODEL_VERSION })
     } catch (err) {
       // O sharp falha quando o ficheiro não é uma imagem válida

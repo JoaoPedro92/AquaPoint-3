@@ -46,7 +46,9 @@ services:
     build: ../AI_Service
     restart: unless-stopped
     deploy:
-      replicas: 1
+      # 2 réplicas para tolerância a faltas: o backend distribui os pedidos
+      # pelas duas (round robin) e, se uma cair, usa só a outra
+      replicas: 2
       resources:
         limits:
           cpus: "2"
