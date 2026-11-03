@@ -42,7 +42,7 @@ export async function loadModel() {
 }
 
 // Recebe a imagem (Buffer) e diz se é bebedouro
-export async function predictFountain(buffer) {
+export async function predictAquapoint(buffer) {
   // sharp só abre a imagem (tamanho original), sem redimensionar
   const { data, info } = await sharp(buffer)
     .removeAlpha()

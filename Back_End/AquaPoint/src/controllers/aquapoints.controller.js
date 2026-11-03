@@ -1,7 +1,7 @@
 import { pool } from "../db.js";
 import { findUserById } from "./user.controller.js";
 import { findFavoritesByUserId } from "./favorites.controller.js";
-import { predictFountain } from "../ai/bebedouroModel.js";
+import { predictAquapoint } from "../ai/bebedouroModel.js";
 
 
 // GET /aquapoints
@@ -107,7 +107,7 @@ export async function createAquapoint(req, res){
 
   if (aquaPointPictureBlob) {
     try {
-      const { prob, isBebedouro } = await predictFountain(aquaPointPictureBlob)
+      const { prob, isBebedouro } = await predictAquapoint(aquaPointPictureBlob)
       if (!isBebedouro) {
         return res.status(400).json({ error: 'A imagem não parece ser um bebedouro. Tente outra foto.', prob })
       }
@@ -137,7 +137,7 @@ export async function checkAquapointImage(req, res) {
   }
   try {
     const buffer = Buffer.from(image.split(',')[1], 'base64')
-    const { prob, isBebedouro } = await predictFountain(buffer)
+    const { prob, isBebedouro } = await predictAquapoint(buffer)
     res.json({ isBebedouro, prob })
   } catch (err) {
     res.status(400).json({ error: 'Não foi possível ler a imagem.' })
