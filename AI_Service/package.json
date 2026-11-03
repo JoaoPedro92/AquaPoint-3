@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "health": "node src/healthcheck.js"
+    "health": "node src/healthcheck.js",
+    "classify": "node src/classify.js"
   },
   "license": "ISC",
   "dependencies": {

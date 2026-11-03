@@ -1,4 +1,4 @@
-// Usado pelo healthcheck do Docker: sai com 0 se o modelo estiver carregado
+// Usado pelo healthcheck do Docker: output/devolve com process.exit(0) se o modelo estiver carregado
 import { grpc, AquapointClassifier } from './proto.js'
 
 const PORT = process.env.PORT || 50051
