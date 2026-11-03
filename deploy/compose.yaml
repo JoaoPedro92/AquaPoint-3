@@ -37,6 +37,19 @@ services:
     deploy:
       replicas: 2
 
+  # Microserviço de IA (gRPC na porta 50051, só na rede interna do Docker)
+  # Diz se a foto de um ponto é um bebedouro. O backend não depende dele
+  ai-service:
+    image: ghcr.io/joaopedro92/aquapoint-ai-model:latest
+    build: ../AI_Service
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1g
+
   # Painel de monitorização em http://localhost:8081
   # Usa a imagem do backend só porque já traz o Node.js e o mysql2
   monitor:
