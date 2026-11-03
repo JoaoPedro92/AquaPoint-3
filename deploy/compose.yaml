@@ -30,6 +30,10 @@ services:
       DB_PORT: 3306
       # Endereço do microserviço de IA (gRPC)
       AI_SERVICE_URL: ai-service:50051
+      # Cada chamada à IA fica registada aqui (lido pelo painel de monitorização)
+      AI_LOG_FILE: /logs/ai/calls.json
+    volumes:
+      - ai-logs:/logs/ai
     deploy:
       replicas: 3
 
@@ -69,6 +73,7 @@ services:
     volumes:
       - ./monitor:/monitor:ro
       - proxy-logs:/logs
+      - ai-logs:/logs/ai
       - /var/run/docker.sock:/var/run/docker.sock
 
   # Nó 1 do cluster Galera: cria o cluster e importa o backup.sql
@@ -124,3 +129,4 @@ volumes:
   db1-data:
   db2-data:
   proxy-logs:
+  ai-logs:

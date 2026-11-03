@@ -15,6 +15,9 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 
 COPY --chown=node:node . .
 
+# Pasta do log das chamadas à IA (volume partilhado com o painel de monitorização)
+RUN mkdir -p /logs/ai && chown node:node /logs/ai
+
 USER node
 
 EXPOSE 3000

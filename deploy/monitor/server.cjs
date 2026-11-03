@@ -5,6 +5,7 @@ const mysql = require('mysql2/promise');
 
 const PORT = 4000;
 const LOG_FILE = '/logs/access.json';
+const AI_LOG_FILE = '/logs/ai/calls.json'; // escrito pelos backends a cada chamada gRPC ao ai-service
 const PROJECT = process.env.COMPOSE_PROJECT || 'aquapoint';
 const ROOT_PW = process.env.DB_ROOT_PASSWORD;
 const DB_NODES = (process.env.DB_NODES || 'db1,db2').split(',');
@@ -48,11 +49,11 @@ async function getContainers() {
     .sort((a, b) => a.service.localeCompare(b.service) || a.replica - b.replica);
 }
 
-function readRecentLog(maxBytes = 1024 * 1024) {
+function readRecentLog(file = LOG_FILE, maxBytes = 1024 * 1024) {
   try {
-    const { size } = fs.statSync(LOG_FILE);
+    const { size } = fs.statSync(file);
     const start = Math.max(0, size - maxBytes);
-    const fd = fs.openSync(LOG_FILE, 'r');
+    const fd = fs.openSync(file, 'r');
     const buf = Buffer.alloc(size - start);
     fs.readSync(fd, buf, 0, buf.length, start);
     fs.closeSync(fd);
@@ -128,6 +129,28 @@ async function buildStats() {
   const statusGroups = { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 };
   entries.forEach((e) => { const g = `${String(e.status)[0]}xx`; if (g in statusGroups) statusGroups[g]++; });
 
+  // ---------- Chamadas backend -> ai-service (gRPC) ----------
+  // O backend regista o seu hostname (= início do id do container) e o IP da réplica de IA que respondeu
+  const nameOfBackend = (host) => {
+    const c = Array.isArray(containers) && containers.find((x) => x.id.startsWith(host));
+    return c ? c.name : host;
+  };
+  const nameOfAi = (peer) => {
+    const ip = String(peer || '').split(':')[0];
+    return ipToName[ip] || null;
+  };
+  const aiEntries = readRecentLog(AI_LOG_FILE).map((e) => ({
+    t: e.t, backend: nameOfBackend(e.backend), ai: nameOfAi(e.peer), result: e.result, ms: e.ms,
+  }));
+  const aiLastMinute = aiEntries.filter((e) => now - e.t <= 60);
+  const aiPerPair = {};
+  const aiPerReplica = {};
+  aiLastMinute.forEach((e) => {
+    if (!e.ai) return;
+    aiPerPair[`${e.backend}|${e.ai}`] = (aiPerPair[`${e.backend}|${e.ai}`] || 0) + 1;
+    aiPerReplica[e.ai] = (aiPerReplica[e.ai] || 0) + 1;
+  });
+
   const avg = (arr) => (arr.length ? arr.reduce((s, e) => s + Number(e.rt || 0), 0) / arr.length : 0);
 
   return {
@@ -146,6 +169,13 @@ async function buildStats() {
     recent: entries.slice(-40).reverse().map((e) => ({
       t: e.t, method: e.method, uri: e.uri, status: e.status, rt: e.rt, replica: replicaOf(e),
     })),
+    ai: {
+      lastMinute: aiLastMinute.length,
+      unavailableLastMinute: aiLastMinute.filter((e) => e.result === 'indisponivel').length,
+      perPair: aiPerPair,
+      perReplica: aiPerReplica,
+      recent: aiEntries.slice(-20).reverse(),
+    },
   };
 }
 
@@ -174,6 +204,7 @@ http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && req.url === '/api/logs/clear') {
       fs.truncateSync(LOG_FILE, 0);
+      try { fs.truncateSync(AI_LOG_FILE, 0); } catch {} // pode ainda não existir
       return send(res, 200, { ok: true });
     }
     send(res, 404, { error: 'Não encontrado.' });

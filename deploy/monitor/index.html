@@ -18,6 +18,7 @@
     --ok: #2F8F5B;
     --warn: #B7801A;
     --bad: #B9443A;
+    --ai: #7A55B8;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -31,6 +32,7 @@
       --ok: #5BC28A;
       --warn: #E0A93E;
       --bad: #E66D62;
+      --ai: #B79BE6;
       color-scheme: dark;
     }
   }
@@ -68,6 +70,8 @@
   .pipe.idle { opacity: .25; }
   .pipe.db { stroke-dasharray: 6 6; }
   .pipe.base { opacity: .35; }
+  .pipe.ai { stroke: var(--ai); }
+  .pipe.ai.idle { opacity: .2; stroke-dasharray: 2 5; }
   .pipe.flow-line { stroke: var(--surface); opacity: .9; stroke-dasharray: 3 12; animation: run 1s linear infinite; }
   @keyframes run { to { stroke-dashoffset: -15; } }
   @media (prefers-reduced-motion: reduce) { .pipe.flow-line { animation: none; } }
@@ -130,7 +134,7 @@
   </header>
 
   <div class="flow">
-    <svg id="diagram" viewBox="0 0 880 400" role="img" aria-label="Diagrama do tráfego entre o proxy, as réplicas e a base de dados"></svg>
+    <svg id="diagram" viewBox="0 0 880 400" role="img" aria-label="Diagrama do tráfego entre o proxy, as réplicas, a base de dados e o serviço de IA"></svg>
   </div>
 
   <div class="grid">
@@ -162,6 +166,17 @@
       </section>
     </div>
   </div>
+
+  <section class="full">
+    <div class="section-head">
+      <h2>Chamadas à IA (backend → ai-service, gRPC)</h2>
+      <span class="legend" id="aiSummary"></span>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Hora</th><th>Backend</th><th>Réplica de IA</th><th>Resultado</th><th>Tempo</th></tr></thead>
+      <tbody id="aiRecent"></tbody>
+    </table></div>
+  </section>
 
   <section class="full">
     <div class="section-head">
@@ -218,6 +233,7 @@ function drawDiagram(data) {
   const proxy = byService('proxy')[0];
   const fronts = byService('frontend');
   const backs = byService('backend');
+  const ais = byService('ai-service');
   const dbs = data.db;
 
   const P = { x: 110, y: 200 };
@@ -226,6 +242,8 @@ function drawDiagram(data) {
   const backTop = 64 + Math.max(fronts.length, 1) * 58 + 34;
   const backY = backs.map((_, i) => backTop + i * 58);
   const dbY = dbs.map((_, i) => 210 + i * 78);
+  const aiTop = (dbY[dbY.length - 1] || 210) + 120;
+  const aiY = ais.map((_, i) => aiTop + i * 58);
 
   const replicas = [...fronts.map((c, i) => ({ c, y: frontY[i] })), ...backs.map((c, i) => ({ c, y: backY[i] }))];
   const max = Math.max(1, ...replicas.map((r) => data.perReplica[r.c.name] || 0));
@@ -256,6 +274,26 @@ function drawDiagram(data) {
     });
   }
 
+  // Backend -> ai-service (gRPC): espessura conforme as chamadas no último minuto
+  const ai = data.ai || { perPair: {}, perReplica: {} };
+  const aiMax = Math.max(1, ...Object.values(ai.perPair));
+  backs.forEach((b, i) => {
+    if (b.state !== 'running') return;
+    ais.forEach((a, j) => {
+      const n = ai.perPair[`${b.name}|${a.name}`] || 0;
+      const d = curve(midX + 85, backY[i], dbX - 85, aiY[j]);
+      if (n) {
+        pipes += `<path class="pipe ai base" stroke-width="${(2 + (n / aiMax) * 8).toFixed(1)}" d="${d}"></path>`;
+        pipes += `<path class="pipe flow-line" stroke-width="2" d="${d}"></path>`;
+      } else if (a.state === 'running') {
+        pipes += `<path class="pipe ai idle" stroke-width="1.5" d="${d}"></path>`;
+      }
+    });
+  });
+  ais.forEach((a, j) => {
+    nodes += nodeSvg(dbX, aiY[j], shortName(a.name), `${ai.perReplica[a.name] || 0} chamadas/min`, level(a));
+  });
+
   dbs.forEach((d, i) => {
     const lvl = !d.online ? 'bad' : d.state === 'Synced' ? 'ok' : 'warn';
     const sub = d.online ? `${d.state}, ${d.connections} ligações` : 'sem resposta';
@@ -267,9 +305,10 @@ function drawDiagram(data) {
   const labels = `
     <text class="group-label" x="${midX - 85}" y="${frontY[0] - 32}">Site</text>
     <text class="group-label" x="${midX - 85}" y="${backTop - 32}">API</text>
-    <text class="group-label" x="${dbX - 85}" y="${dbY[0] - 32}">Base de dados</text>`;
+    <text class="group-label" x="${dbX - 85}" y="${dbY[0] - 32}">Base de dados</text>
+    ${ais.length ? `<text class="group-label" x="${dbX - 85}" y="${aiTop - 32}">IA (gRPC)</text>` : ''}`;
 
-  const height = Math.max(backY[backY.length - 1] || 300, dbY[dbY.length - 1] || 300) + 50;
+  const height = Math.max(backY[backY.length - 1] || 300, dbY[dbY.length - 1] || 300, aiY[aiY.length - 1] || 0) + 50;
   const svg = $('diagram');
   svg.setAttribute('viewBox', `0 0 880 ${height}`);
   svg.innerHTML = pipes + labels + nodes;
@@ -302,6 +341,20 @@ function render(data) {
     const lvl = d.state === 'Synced' ? 'ok' : 'warn';
     return `<div class="db-node"><div>${esc(d.node)}<small>Cluster com ${d.clusterSize} nó${d.clusterSize === 1 ? '' : 's'}, ${d.connections} ligações ativas</small></div><span class="badge ${lvl}-t">${esc(d.state === 'Synced' ? 'sincronizado' : d.state)}</span></div>`;
   }).join('');
+
+  const aiData = data.ai || { recent: [], lastMinute: 0, unavailableLastMinute: 0 };
+  const aiResult = {
+    bebedouro: ['ok-t', 'é bebedouro'],
+    nao_bebedouro: ['warn-t', 'não é bebedouro'],
+    ilegivel: ['warn-t', 'imagem ilegível'],
+    indisponivel: ['bad-t', 'IA indisponível'],
+  };
+  $('aiSummary').textContent = `${aiData.lastMinute} no último minuto, ${aiData.unavailableLastMinute} sem resposta`;
+  $('aiRecent').innerHTML = aiData.recent.map((r) => {
+    const time = new Date(r.t * 1000).toLocaleTimeString('pt-PT');
+    const [cls, txt] = aiResult[r.result] || ['', r.result];
+    return `<tr><td>${time}</td><td>${esc(shortName(r.backend))}</td><td>${esc(shortName(r.ai) || '–')}</td><td class="${cls}">${esc(txt)}</td><td>${r.ms} ms</td></tr>`;
+  }).join('') || `<tr><td colspan="5">Ainda não há chamadas. Escolhe uma foto ao adicionar um bebedouro.</td></tr>`;
 
   $('recent').innerHTML = data.recent.map((r) => {
     const time = new Date(r.t * 1000).toLocaleTimeString('pt-PT');

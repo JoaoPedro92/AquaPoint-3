@@ -1,12 +1,16 @@
 // Cliente gRPC do ai-service (microserviço que diz se uma imagem é um bebedouro)
 import grpc from '@grpc/grpc-js'
 import protoLoader from '@grpc/proto-loader'
+import fs from 'node:fs'
+import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 
 const PROTO_PATH = fileURLToPath(new URL('../../proto/bebedouro.proto', import.meta.url))
 // No Docker é "ai-service:50051"; a correr localmente, o ai-service está em localhost
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'localhost:50051'
 const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 3000)
+// Ficheiro onde cada chamada fica registada (lido pelo painel do fluxo de logs)
+const AI_LOG_FILE = process.env.AI_LOG_FILE
 
 // "dns:///" faz o cliente pedir ao DNS do Docker TODOS os IPs do ai-service
 // (um por réplica), em vez de usar só o primeiro
@@ -48,6 +52,14 @@ const client = new AquapointClassifier(target, grpc.credentials.createInsecure()
   'grpc.dns_min_time_between_resolutions_ms': 5000,
 })
 
+// Uma linha JSON por chamada, no mesmo estilo do log do nginx
+function logCall(entry) {
+  if (!AI_LOG_FILE) return
+  fs.appendFile(AI_LOG_FILE, JSON.stringify(entry) + '\n', (err) => {
+    if (err) console.warn('Não foi possível escrever o log da IA:', err.message)
+  })
+}
+
 /**
  * Pergunta ao ai-service se a imagem é um bebedouro. Nunca lança erro.
  * - IA respondeu:            { available: true, isBebedouro, prob }
@@ -56,18 +68,31 @@ const client = new AquapointClassifier(target, grpc.credentials.createInsecure()
  */
 export function classifyImage(buffer) {
   return new Promise((resolve) => {
-    const deadline = new Date(Date.now() + AI_TIMEOUT_MS)
+    const started = Date.now()
+    const deadline = new Date(started + AI_TIMEOUT_MS)
 
-    client.Classify({ image: buffer }, { deadline }, (err, res) => {
+    const call = client.Classify({ image: buffer }, { deadline }, (err, res) => {
+      let result
       if (!err) {
-        return resolve({ available: true, isBebedouro: res.isBebedouro, prob: res.prob })
+        result = { available: true, isBebedouro: res.isBebedouro, prob: res.prob }
+      } else if (err.code === grpc.status.INVALID_ARGUMENT) {
+        result = { available: true, isBebedouro: false, prob: null }
+      } else {
+        // UNAVAILABLE (todas as réplicas em baixo), DEADLINE_EXCEEDED, etc.
+        console.warn(`ai-service indisponível (${grpc.status[err.code]}): ${err.details}`)
+        result = { available: false }
       }
-      if (err.code === grpc.status.INVALID_ARGUMENT) {
-        return resolve({ available: true, isBebedouro: false, prob: null })
-      }
-      // UNAVAILABLE (todas as réplicas em baixo), DEADLINE_EXCEEDED, etc.
-      console.warn(`ai-service indisponível (${grpc.status[err.code]}): ${err.details}`)
-      resolve({ available: false })
+
+      logCall({
+        t: started / 1000,
+        backend: os.hostname(),              // no Docker = início do id do container
+        peer: err ? null : call.getPeer(),   // IP:porta da réplica de IA que respondeu
+        result: !result.available ? 'indisponivel'
+          : result.prob === null ? 'ilegivel'
+          : result.isBebedouro ? 'bebedouro' : 'nao_bebedouro',
+        ms: Date.now() - started,
+      })
+      resolve(result)
     })
   })
 }
