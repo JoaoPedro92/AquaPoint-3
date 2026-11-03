@@ -1,7 +1,7 @@
 import { pool } from "../db.js";
 import { findUserById } from "./user.controller.js";
 import { findFavoritesByUserId } from "./favorites.controller.js";
-import { predictAquapoint } from "../ai/bebedouroModel.js";
+import { classifyImage } from "../ai/aiClient.js";
 
 
 // GET /aquapoints
@@ -105,15 +105,16 @@ export async function createAquapoint(req, res){
     aquaPointPictureBlob = Buffer.from(image.split(',')[1], 'base64')
   }
 
+  // Validação da imagem pelo ai-service (gRPC).
+  // Se a IA estiver em baixo, grava na mesma: o ponto fica pendente (isPending)
+  // e um admin confirma a foto na aprovação.
+  let aiChecked = false
   if (aquaPointPictureBlob) {
-    try {
-      const { prob, isBebedouro } = await predictAquapoint(aquaPointPictureBlob)
-      if (!isBebedouro) {
-        return res.status(400).json({ error: 'A imagem não parece ser um bebedouro. Tente outra foto.', prob })
-      }
-    } catch (err) {
-      return res.status(400).json({ error: 'Não foi possível ler a imagem.' })
+    const ai = await classifyImage(aquaPointPictureBlob)
+    if (ai.available && !ai.isBebedouro) {
+      return res.status(400).json({ error: 'A imagem não é um bebedouro. Tente outra foto.', prob: ai.prob })
     }
+    aiChecked = ai.available
   }
 
   try{
@@ -122,7 +123,7 @@ export async function createAquapoint(req, res){
       [point_name, aquaPointPictureBlob, point_type, point_trust, local_id, state_id, latitude, longitude, createdBy, isPending]
     )
 
-    res.status(201).json({ message: 'Aquapoint created successfully', id: result.insertId })
+    res.status(201).json({ message: 'Aquapoint created successfully', id: result.insertId, aiChecked })
   }
   catch(err){
     return res.status(500).json({ error: err.message })
@@ -135,13 +136,15 @@ export async function checkAquapointImage(req, res) {
   if (typeof image !== 'string' || !image.startsWith('data:image/')) {
     return res.status(400).json({ error: 'Imagem inválida' })
   }
-  try {
-    const buffer = Buffer.from(image.split(',')[1], 'base64')
-    const { prob, isBebedouro } = await predictAquapoint(buffer)
-    res.json({ isBebedouro, prob })
-  } catch (err) {
-    res.status(400).json({ error: 'Não foi possível ler a imagem.' })
+  const buffer = Buffer.from(image.split(',')[1], 'base64')
+  const ai = await classifyImage(buffer)
+
+  // IA em baixo: o frontend avisa e deixa submeter na mesma
+  if (!ai.available) {
+    return res.json({ aiAvailable: false, isBebedouro: null })
   }
+  // Imagem ilegível conta como "não é bebedouro"
+  res.json({ aiAvailable: true, isBebedouro: ai.isBebedouro, prob: ai.prob })
 }
 
 // PUT /aquapoints/{id}

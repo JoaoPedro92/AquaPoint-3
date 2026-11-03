@@ -200,10 +200,13 @@
                         <span class="spinner-border spinner-border-sm me-1"></span>A verificar imagem...
                     </small>
                     <small v-else-if="imageCheck === 'ok'" class="text-success d-block mt-2">
-                        <i class="bi bi-check-circle me-1"></i>Parece um bebedouro
+                        <i class="bi bi-check-circle me-1"></i>A imagem é um bebedouro
                     </small>
                     <small v-else-if="imageCheck === 'failed'" class="text-danger d-block mt-2">
-                        <i class="bi bi-x-circle me-1"></i>Não parece um bebedouro. Escolha outra foto.
+                        <i class="bi bi-x-circle me-1"></i>A imagem não é um bebedouro. Escolha outra foto.
+                    </small>
+                    <small v-else-if="imageCheck === 'unavailable'" class="text-warning d-block mt-2">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Não foi possível verificar a imagem: serviço de IA em baixo. Pode submeter na mesma.
                     </small>
                 </div>
                 <!----------------------------->
@@ -225,7 +228,7 @@
             </div>
 
             <div class="d-flex justify-content-center mt-5">
-                <button class="btn btn-success shadow-sm" style="width: 60%" :disabled="imageCheck !== 'ok'" v-on:click="SubmitNewAquapoint">SUBMETER</button>
+                <button class="btn btn-success shadow-sm" style="width: 60%" :disabled="imageCheck !== 'ok' && imageCheck !== 'unavailable'" v-on:click="SubmitNewAquapoint">SUBMETER</button>
             </div>
         </div>
     </div>
@@ -684,7 +687,8 @@
             imageCheck.value = 'verifying'
             try {
                 const { data } = await aquapointService.checkImage(ev.target.result)
-                imageCheck.value = data.isBebedouro ? 'ok' : 'failed'
+                if (!data.aiAvailable) imageCheck.value = 'unavailable'
+                else imageCheck.value = data.isBebedouro ? 'ok' : 'failed'
                 //if (!data.ehBebedouro) toast.error('A imagem não parece ser um bebedouro. Escolha outra foto.')
             } catch (err) {
                 imageCheck.value = 'failed'

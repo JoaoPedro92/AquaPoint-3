@@ -28,6 +28,8 @@ services:
       # Os backends ligam-se à base de dados através do proxy
       DB_HOST: proxy
       DB_PORT: 3306
+      # Endereço do microserviço de IA (gRPC)
+      AI_SERVICE_URL: ai-service:50051
     deploy:
       replicas: 3
 

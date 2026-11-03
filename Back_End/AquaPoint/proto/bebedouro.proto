@@ -1,0 +1,29 @@
+// Formato de comunicação entre o backend (cliente) e o ai-service (servidor) via gRPC.
+syntax = "proto3";
+
+package aquapoint.ai.v1;
+
+service AquapointClassifier {
+  // Diz se o serviço está pronto , modelo carregado
+  rpc Health (HealthRequest) returns (HealthResponse);
+
+  // Recebe uma imagem e diz se é um bebedouro
+  rpc Classify (ClassifyRequest) returns (ClassifyResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool ready = 1;
+  string model_version = 2;
+}
+
+message ClassifyRequest {
+  bytes image = 1;          // bytes do ficheiro (JPEG, PNG, etc)
+}
+
+message ClassifyResponse {
+  float prob = 1;           // saída da CNN (0 a 1);
+  bool is_bebedouro = 2;
+  string model_version = 3;
+}
