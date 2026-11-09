@@ -2,7 +2,8 @@
 
 Microserviço com comunicação gRPC que diz se uma imagem é um bebedouro ou não.
 O modelo é uma CNN (entrada 128x128x3, saída sigmoid) treinada em Keras no Colab
-e exportada para TensorFlow.js (`src/model/weights_bebedouro.json`).
+e exportada para o formato do TensorFlow.js em `src/model/bebedouro/`:
+`model.json` (arquitetura) e `weights.bin` (pesos).
 
 O formato está em `proto/bebedouro.proto`. O serviço só é acessível dentro da rede
 do Docker (porta 50051); o browser nunca fala com ele diretamente.

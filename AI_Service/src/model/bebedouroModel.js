@@ -8,44 +8,24 @@ export const MODEL_VERSION = process.env.AI_MODEL_VERSION ?? 'v1'
 
 let model = null
 
-// A mesma arquitetura do Colab, camada a camada
-function createModel() {
-  const m = tf.sequential()
-  const convBlock = (filters, primeiro = false) => {
-    m.add(tf.layers.conv2d({
-      filters: filters, kernelSize: 3, padding: 'same', activation: 'relu',
-      ...(primeiro && { inputShape: [128, 128, 3] }),
-    }))
-    m.add(tf.layers.batchNormalization({ momentum: 0.9 }))
-  }
-  convBlock(32, true); m.add(tf.layers.maxPooling2d({ poolSize: 2 }))
-  convBlock(64);       m.add(tf.layers.maxPooling2d({ poolSize: 2 }))
-  convBlock(128);      m.add(tf.layers.maxPooling2d({ poolSize: 2 }))
-  convBlock(128)
-  m.add(tf.layers.globalAveragePooling2d({}))
-  m.add(tf.layers.dropout({ rate: 0.4 }))
-  m.add(tf.layers.dense({ units: 1, activation: 'sigmoid' }))
-  return m
-}
-
 export function isModelLoaded() {
   return model !== null
 }
 
-// Chamar uma vez no arranque do serviço
+// Chamar uma vez no arranque do serviço.
+// O modelo completo (arquitetura + pesos) está em ./bebedouro/ no formato do TensorFlow.js:
+// model.json (camadas e configuração) e weights.bin (os 242 369 pesos treinados)
 export async function loadModel() {
-  const ficheiro = new URL('./weights_bebedouro.json', import.meta.url)
-  const weights = JSON.parse(await fs.readFile(ficheiro, 'utf8'))
-  const m = createModel()
-  let i = 0
-  for (const layer of m.layers) {
-    const n = layer.weights.length          // conv: 2, batchnorm: 4, dense: 2, outras: 0
-    if (n > 0) {
-      layer.setWeights(weights.slice(i, i + n).map((p) => tf.tensor(p.data, p.shape)))
-    }
-    i += n
-  }
-  model = m
+  const pasta = new URL('./bebedouro/', import.meta.url)
+  const json = JSON.parse(await fs.readFile(new URL('model.json', pasta), 'utf8'))
+  const pesos = await fs.readFile(new URL('weights.bin', pasta))
+
+  // O @tensorflow/tfjs puro não lê ficheiros com file://, por isso passamos o conteúdo já lido
+  model = await tf.loadLayersModel(tf.io.fromMemory({
+    modelTopology: json.modelTopology,
+    weightSpecs: json.weightsManifest[0].weights,
+    weightData: pesos.buffer.slice(pesos.byteOffset, pesos.byteOffset + pesos.byteLength),
+  }))
   console.log(`Modelo de bebedouros carregado (${MODEL_VERSION}, limiar ${LIMIAR})`)
 }
 
