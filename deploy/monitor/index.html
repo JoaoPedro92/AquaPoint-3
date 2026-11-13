@@ -3,198 +3,368 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fluxo de dados do AquaPoint</title>
+<title>AquaPoint Monitorização</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
-<style>F
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
   :root {
-    --bg: #EAF1F0;
-    --surface: #F7FAF9;
-    --ink: #12323D;
-    --muted: #5B7680;
-    --line: #C9D9DA;
-    --pipe: #2A7FA0;
-    --ok: #2F8F5B;
-    --warn: #B7801A;
-    --bad: #B9443A;
-    --ai: #7A55B8;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0E1D22;
-      --surface: #14272D;
-      --ink: #DCEBEA;
-      --muted: #8FA9AE;
-      --line: #24414A;
-      --pipe: #5AB3D1;
-      --ok: #5BC28A;
-      --warn: #E0A93E;
-      --bad: #E66D62;
-      --ai: #B79BE6;
-      color-scheme: dark;
-    }
+    --bg: #11151B;
+    --surface: #1A2029;
+    --subtle: #1F2631;
+    --group: #161B23;
+    --line: #2C3542;
+    --line2: #252D39;
+    --node: #1F2631;
+    --node-line: #3C4757;
+    --ink: #E4E9EF;
+    --ink2: #C3CCD6;
+    --muted: #8F9CAB;
+    --faint: #4A5565;
+    --accent: #6AA5E0;
+    --accent-bg: #1E3048;
+    --db: #4DB6A9;
+    --ai: #A397E0;
+    --ai-bg: #2A2745;
+    --ok: #56B885;
+    --ok-bg: #1A3328;
+    --warn: #E0AE4F;
+    --warn-bg: #3A2E16;
+    --bad: #EC7468;
+    --bad-bg: #3D211F;
+    --bad-row: #231A1B;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
-    font-variant-numeric: tabular-nums;
+    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13.5px;
+    line-height: 1.45;
   }
-  .page { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
+  .mono, td, .kpi .val, .tip, .wf .ms { font-family: "Poppins", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  h1 {
-    margin: 0;
-    font-size: clamp(28px, 4vw, 40px);
-    font-weight: 750;
-    font-stretch: 125%;
-    letter-spacing: -0.01em;
-  }
-  .live { color: var(--muted); display: flex; align-items: center; gap: 8px; }
-  .live .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
-  .live.stale .dot { background: var(--bad); }
+  /* ---------- Topo ---------- */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .topbar .in, main { max-width: 1440px; margin: 0 auto; padding-left: 28px; padding-right: 28px; }
+  .topbar .in { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 14px; padding-bottom: 14px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo { height: 38px; width: auto; display: block; }
+  .mark { width: 34px; height: 34px; border-radius: 7px; background: var(--accent-bg); display: grid; place-items: center; }
+  .crumb { color: var(--muted); font-size: 12px; }
+  h1 { margin: 2px 0 0; font-size: 20px; font-weight: 600; }
+  .tools { display: flex; gap: 12px; align-items: center; }
+  .live { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .live.stale i { background: var(--bad); }
+  .btn { font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink2); font-weight: 500; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.sm { padding: 3px 10px; font-size: 12px; }
+  .btn.danger { color: var(--bad); }
+  .btn.go { color: var(--ok); }
+  .btn[disabled] { opacity: .5; cursor: wait; }
 
-  h2 { font-size: 17px; font-weight: 700; font-stretch: 110%; margin: 0 0 12px; }
+  main { padding-top: 20px; padding-bottom: 36px; }
+  .banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--warn-bg); border: 1px solid #5A4720; color: #F0D9A6; border-radius: 6px; padding: 9px 14px; margin-bottom: 16px; }
+  .banner[hidden] { display: none; }
+  .banner.bad { background: var(--bad-bg); border-color: #6A3530; color: #F6C9C3; }
+  .banner b { font-weight: 600; }
+  .message { color: var(--bad); min-height: 0; margin: -6px 0 12px; }
+  .message:empty { display: none; }
+  .message.info { color: var(--muted); }
 
-  /* Diagrama: o elemento principal da página */
-  .flow { margin: 22px 0 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
-  .flow svg { width: 100%; height: auto; display: block; }
-  .flow .caption { color: var(--muted); font-size: 13px; padding: 4px 12px 8px; }
-  .pipe { fill: none; stroke: var(--pipe); stroke-linecap: round; opacity: .85; }
-  .pipe.idle { opacity: .25; }
-  .pipe.db { stroke-dasharray: 6 6; }
-  .pipe.base { opacity: .35; }
-  .pipe.ai { stroke: var(--ai); }
-  .pipe.ai.idle { opacity: .2; stroke-dasharray: 2 5; }
-  .pipe.flow-line { stroke: var(--surface); opacity: .9; stroke-dasharray: 3 12; animation: run 1s linear infinite; }
-  @keyframes run { to { stroke-dashoffset: -15; } }
-  @media (prefers-reduced-motion: reduce) { .pipe.flow-line { animation: none; } }
-  .node rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
-  .node.ok rect { stroke: var(--ok); }
-  .node.warn rect { stroke: var(--warn); }
-  .node.bad rect { stroke: var(--bad); stroke-dasharray: 4 3; }
-  .node text { fill: var(--ink); font-family: inherit; }
-  .node .sub { fill: var(--muted); font-size: 12px; }
-  .node circle.ok { fill: var(--ok); } .node circle.warn { fill: var(--warn); } .node circle.bad { fill: var(--bad); }
-  .group-label { fill: var(--muted); font-size: 13px; font-family: inherit; }
+  /* ---------- Cartões ---------- */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+  .ch { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line2); flex-wrap: wrap; }
+  .ch h2 { margin: 0; font-size: 14px; font-weight: 600; }
+  .ch .sub { color: var(--muted); font-size: 12px; }
+  .cb { padding: 14px 16px; }
 
-  .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
-  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
-  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 14px; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr 1fr 1.25fr; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 16px; }
+  .kpi { padding: 14px 16px; border-left: 1px solid var(--line2); min-width: 0; }
+  .kpi:first-child { border-left: 0; }
+  .kpi .lbl { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .kpi .row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: 6px; }
+  .kpi .val { font-size: 26px; font-weight: 500; line-height: 1.1; }
+  .kpi .val small { font-size: 13px; color: var(--muted); margin-left: 4px; }
+  .kpi .delta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .kpi svg { flex: 0 1 160px; height: 30px; }
+  .pos { color: var(--ok); } .neg { color: var(--bad); }
 
-  .numbers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; margin-bottom: 18px; }
-  .numbers div b { display: block; font-size: 26px; font-weight: 700; font-stretch: 115%; line-height: 1.1; }
-  .numbers div span { color: var(--muted); font-size: 13px; }
+  .grid-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-bottom: 16px; align-items: start; }
+  #diagram { max-height: 400px; }
+  .grid-bottom { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 1100px) { .grid-top, .grid-bottom { grid-template-columns: minmax(0, 1fr); } .kpis { grid-template-columns: 1fr; } .kpi { border-left: 0; border-top: 1px solid var(--line2); } .kpi:first-child { border-top: 0; } }
 
-  .scroll { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  td { padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .legend { display: flex; gap: 14px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 5px; }
+
+  /* ---------- Diagrama ---------- */
+  .flow { padding: 10px 12px 8px; overflow-x: auto; }
+  .flow svg { width: 100%; min-width: 640px; height: auto; display: block; }
+  svg text { font-family: "Poppins", system-ui, sans-serif; fill: var(--ink); }
+  svg .m { fill: var(--muted); font-size: 11px; font-family: "Poppins", system-ui, sans-serif; }
+  svg .glabel { fill: var(--muted); font-size: 10.5px; letter-spacing: .06em; }
+  .group { fill: var(--group); stroke: var(--line); }
+  .pipe { fill: none; stroke-linecap: round; transition: opacity .3s; }
+  .pipe.http { stroke: var(--accent); opacity: .8; }
+  .pipe.sql { stroke: var(--db); stroke-dasharray: 5 4; opacity: .8; }
+  .pipe.grpc { stroke: var(--ai); opacity: .8; }
+  .pipe.idle { stroke: var(--faint); opacity: .7; stroke-dasharray: 3 4; }
+  .pipe.dim { opacity: .12; }
+  .flowdash { fill: none; stroke: #fff; opacity: .8; stroke-linecap: round; stroke-dasharray: 1 17; animation: flow 1s linear infinite; pointer-events: none; }
+  @keyframes flow { from { stroke-dashoffset: 18; } to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) { .flowdash { display: none; } }
+  .pipe.lit { opacity: 1; }
+  .pipe.lit.bad { stroke: var(--bad); stroke-dasharray: 5 5; }
+  .node rect.box { fill: var(--node); stroke: var(--node-line); stroke-width: 1; }
+  .node .dot.ok { fill: var(--ok); } .node .dot.warn { fill: var(--warn); } .node .dot.bad { fill: var(--bad); }
+  .node.bad rect.box { fill: #2A1B1C; stroke: var(--bad); stroke-dasharray: 4 3; }
+  .node.bad .name, .node.bad .m { fill: var(--bad); }
+  .node.warn rect.box { stroke: var(--warn); }
+  .node.hover rect.box, .node.lit rect.box { stroke: var(--accent); stroke-width: 2; }
+  .node.lit-ai rect.box { stroke: var(--ai); stroke-width: 2; }
+  .node.lit-bad rect.box { stroke: var(--bad); stroke-width: 2; }
+  .node.faded { opacity: .35; }
+  .node[data-replica] { cursor: pointer; }
+  .tag { font-size: 10.5px; }
+
+  /* ---------- Tabelas ---------- */
+  .scroll { overflow: auto; }
+  .scroll.tall { max-height: 460px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { color: var(--muted); font-weight: 500; font-size: 11.5px; text-align: left; padding: 8px 14px; background: var(--subtle); border-bottom: 1px solid var(--line2); white-space: nowrap; position: sticky; top: 0; font-family: "Poppins", system-ui, sans-serif; }
+  td { padding: 8px 14px; border-bottom: 1px solid var(--line2); white-space: nowrap; font-size: 13px; }
   tr:last-child td { border-bottom: 0; }
-  td.uri { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+  td.r, th.r { text-align: right; }
+  td.name { font-family: "Poppins", system-ui, sans-serif; font-weight: 600; }
+  .ico { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; margin-right: 10px; vertical-align: middle; }
+  .ico.proxy { color: var(--ink2); background: var(--subtle); border: 1px solid var(--line2); }
+  .ico.web, .ico.api { color: var(--accent); background: var(--accent-bg); }
+  .ico.db { color: var(--db); background: color-mix(in srgb, var(--db) 14%, transparent); }
+  .ico.ai { color: var(--ai); background: color-mix(in srgb, var(--ai) 14%, transparent); }
+  td.svc { font-family: "Poppins", system-ui, sans-serif; color: var(--muted); }
+  td.uri { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+  td.empty { color: var(--muted); font-family: "Poppins", system-ui, sans-serif; white-space: normal; }
+  tr.off td { background: var(--bad-row); }
+  tr[data-replica] { cursor: pointer; }
+  tr[data-replica]:hover td { background: var(--subtle); }
+  .st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 4px; font-family: "Poppins", system-ui, sans-serif; }
+  .st::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .st.yes::before, .st.no::before { width: auto; height: auto; border-radius: 0; background: none; font-weight: 700; font-size: 12px; line-height: 1; }
+  .st.yes::before { content: "✓"; }
+  .st.no::before { content: "✕"; }
+  .st.ok { background: var(--ok-bg); color: var(--ok); } .st.warn { background: var(--warn-bg); color: var(--warn); } .st.bad { background: var(--bad-bg); color: var(--bad); }
+  .code { font-size: 12px; font-weight: 500; padding: 1px 7px; border-radius: 4px; }
+  .code.ok { background: var(--ok-bg); color: var(--ok); } .code.info { background: var(--accent-bg); color: var(--accent); } .code.warn { background: var(--warn-bg); color: var(--warn); } .code.bad { background: var(--bad-bg); color: var(--bad); }
+  .meth { display: inline-block; width: 40px; font-size: 11.5px; color: var(--ink2); }
+  .load { display: flex; align-items: center; gap: 10px; }
+  .load .t { width: 110px; height: 6px; border-radius: 3px; background: var(--line2); overflow: hidden; }
+  .load .t i { display: block; height: 100%; background: var(--accent); }
+  .load .t i.ai { background: var(--ai); }
+  .lock { color: var(--muted); font-size: 12px; font-family: "Poppins", system-ui, sans-serif; }
+  .eye { width: 28px; height: 26px; display: inline-grid; place-items: center; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); background: var(--surface); padding: 0; vertical-align: middle; }
+  .eye:hover { color: var(--accent); border-color: var(--accent); }
 
-  .badge { display: inline-flex; align-items: center; gap: 6px; }
-  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-  .ok-t { color: var(--ok); } .warn-t { color: var(--warn); } .bad-t { color: var(--bad); }
+  /* ---------- Respostas HTTP ---------- */
+  .hbar { display: flex; height: 8px; border-radius: 3px; overflow: hidden; margin: 12px 0 10px; background: var(--line2); }
+  .hleg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+  .hleg span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .hleg .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .hleg b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .hbar i { display: block; height: 100%; }
+  .kv { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px 12px; align-items: center; }
+  .kv .sw { width: 10px; height: 10px; border-radius: 2px; }
+  .kv .d { color: var(--muted); }
+  .kv b, .kv .p { font-family: "Poppins", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .kv b { font-weight: 500; text-align: right; }
+  .kv .p { color: var(--muted); width: 56px; text-align: right; }
 
-  button {
-    font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 6px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
-  }
-  button:hover { border-color: var(--pipe); }
-  button:focus-visible { outline: 2px solid var(--pipe); outline-offset: 2px; }
-  button[disabled] { opacity: .5; cursor: wait; }
-  button.danger { color: var(--bad); }
+  /* ---------- Caixa da réplica ---------- */
+  .tip { position: fixed; z-index: 40; width: 380px; max-width: calc(100vw - 24px); background: var(--surface); border: 1px solid var(--node-line); border-radius: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.5); font-size: 12px; pointer-events: none; }
+  .tip.pinned { pointer-events: auto; border-color: var(--accent); }
+  .tip .th { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line2); font-family: "Poppins", system-ui, sans-serif; }
+  .tip .th b { font-size: 14px; font-weight: 600; display: block; }
+  .tip .th span.d { color: var(--muted); font-size: 11.5px; font-family: "Poppins", system-ui, sans-serif; }
+  .tip .stats { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line2); }
+  .tip .stats div { padding: 8px 14px; border-left: 1px solid var(--line2); }
+  .tip .stats div:first-child { border-left: 0; }
+  .tip .stats b { display: block; font-size: 15px; font-weight: 500; }
+  .tip .stats span { color: var(--muted); font-size: 11px; }
+  .tip .hd { padding: 8px 14px 2px; font-size: 11.5px; color: var(--muted); font-weight: 500; font-family: "Poppins", system-ui, sans-serif; }
+  .tip .rq { display: grid; grid-template-columns: 62px minmax(0, 1fr) 38px 52px; gap: 8px; align-items: center; padding: 5px 14px; }
+  .tip .rq .u { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tip .rq .t, .tip .rq .ms { color: var(--muted); }
+  .tip .rq .ms { text-align: right; }
+  .tip .none { padding: 6px 14px 4px; color: var(--muted); font-family: "Poppins", system-ui, sans-serif; }
+  .tip .ft { padding: 8px 14px 10px; border-top: 1px solid var(--line2); margin-top: 6px; color: var(--muted); font-family: "Poppins", system-ui, sans-serif; font-size: 11.5px; }
 
-  .db-node { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
-  .db-node:last-child { border-bottom: 0; }
-  .db-node small { color: var(--muted); display: block; }
+  /* ---------- Modal do percurso ---------- */
+  .modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; }
+  .modal[hidden] { display: none; }
+  .backdrop { position: absolute; inset: 0; background: rgba(5, 8, 12, .75); }
+  .dialog { position: relative; width: min(980px, 100%); max-height: 100%; overflow: auto; background: var(--surface); border: 1px solid var(--node-line); border-radius: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .dialog .ch { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  .dialog .ttl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 15px; font-weight: 600; }
+  .dialog .ttl .mono { font-weight: 500; }
+  .dialog .msub { color: var(--muted); font-size: 12px; margin-top: 2px; font-family: "Poppins", system-ui, sans-serif; }
+  .dialog .flow { padding: 12px 16px 4px; }
+  .wf { display: grid; gap: 10px; padding: 6px 16px 4px; }
+  .wfrow { display: grid; grid-template-columns: 260px minmax(0, 1fr) 72px; gap: 12px; align-items: center; }
+  .wfrow .lbl small { display: block; color: var(--muted); font-size: 11px; font-family: "Poppins", system-ui, sans-serif; }
+  .wfrow .track { position: relative; height: 10px; background: var(--line2); border-radius: 3px; }
+  .wfrow .bar { position: absolute; top: 0; height: 100%; border-radius: 3px; min-width: 3px; }
+  .wf .ms { text-align: right; color: var(--muted); }
+  .wftotal { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 10px 16px 0; padding: 10px 0; border-top: 1px solid var(--line2); }
+  .wftotal span { color: var(--muted); }
+  .wftotal b { font-family: "Poppins", system-ui, sans-serif; font-size: 18px; font-weight: 500; }
+  .note { color: var(--muted); font-size: 12px; margin: 0 16px 16px; }
 
-  .bars { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--line); margin: 6px 0 4px; }
-  .bars span { display: block; height: 100%; }
-  .legend { color: var(--muted); font-size: 13px; display: flex; gap: 14px; flex-wrap: wrap; }
-
-  .message { margin-top: 12px; color: var(--bad); min-height: 1.5em; }
-  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .stack > section + section { margin-top: 24px; }
-  .full { margin-top: 24px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="page">
-  <header>
-    <h1>Fluxo de Pedidos do AquaPoint</h1>
-    <div class="live" id="live"><span class="dot"></span><span id="liveText">A ligar…</span></div>
-  </header>
+<header class="topbar">
+  <div class="in">
+    <div class="brand">
+      <img class="logo" alt="AquaPoint" src="data:image/png;base64,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">
+      <div><div class="crumb">AquaPoint · Monitorização da infraestrutura</div><h1>Estado do sistema</h1></div>
+    </div>
+    <div class="tools">
+      <span class="live" id="live"><i></i><span id="liveText">A ligar…</span></span>
+      <button class="btn" id="loadTest" title="Envia 100 pedidos GET ao frontend e 100 ao backend">Testar carga</button>
+      <button class="btn" id="clearLogs">Limpar histórico</button>
+    </div>
+  </div>
+</header>
 
-  <div class="flow">
-    <svg id="diagram" viewBox="0 0 880 400" role="img" aria-label="Diagrama do tráfego entre o proxy, as réplicas, a base de dados e o serviço de IA"></svg>
+<main>
+  <div class="banner" id="banner" hidden></div>
+  <div class="message" id="message" role="status"></div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="lbl">Pedidos por minuto</div>
+      <div class="row"><div class="val" id="kRpm">0</div><svg id="sRpm" viewBox="0 0 160 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="delta" id="dRpm">a recolher histórico</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Tempo médio de resposta</div>
+      <div class="row"><div class="val"><span id="kAvg">0</span><small>ms</small></div><svg id="sAvg" viewBox="0 0 160 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="delta" id="dAvg">a recolher histórico</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Containers saudáveis</div>
+      <div class="row"><div class="val"><span id="kHealthy">0</span><small id="kTotal">de 0</small></div></div>
+      <div class="delta" id="dHealthy"></div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Respostas HTTP</div>
+      <div class="hbar" id="statusBars"></div>
+      <div class="hleg" id="statusRows"></div>
+      <div class="delta" id="httpTotal"></div>
+    </div>
   </div>
 
-  <div class="grid">
-    <section>
-      <h2>Containers</h2>
-      <div class="scroll"><table>
-        <thead><tr><th>Nome</th><th>Estado</th><th>IP</th><th></th></tr></thead>
+  <div class="grid-top">
+    <section class="card">
+      <div class="ch">
+        <h2>Fluxo de pedidos</h2>
+      </div>
+      <div class="flow"><svg id="diagram" viewBox="0 0 900 400" role="img" aria-label="Diagrama do tráfego entre o proxy, o site, a API, a base de dados e o serviço de IA"></svg></div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-bottom:16px">
+    <div class="ch"><h2>Containers</h2></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Container</th><th>Estado</th><th>IP</th><th>Carga no último minuto</th><th class="r">Ação</th></tr></thead>
         <tbody id="containers"></tbody>
-      </table></div>
-      <div class="message" id="message" role="status"></div>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid-bottom">
+    <section class="card">
+      <div class="ch"><h2>Últimos pedidos</h2><span class="sub" id="recentSub"></span></div>
+      <div class="scroll tall">
+        <table>
+          <thead><tr><th>Hora</th><th>Pedido</th><th>Resposta</th><th>Réplica</th><th class="r">Tempo</th><th class="r">Percurso</th></tr></thead>
+          <tbody id="recent"></tbody>
+        </table>
+      </div>
     </section>
 
-    <div class="stack">
-      <section>
-        <h2>Pedidos</h2>
-        <div class="numbers">
-          <div><b id="nMinute">0</b><span>no último minuto</span></div>
-          <div><b id="nAvg">0 ms</b><span>tempo médio de resposta</span></div>
-          <div><b id="nErrors">0</b><span>erros 5xx no último minuto</span></div>
-          <div><b id="nTotal">0</b><span>no histórico guardado</span></div>
-        </div>
-        <div class="bars" id="statusBars"></div>
-        <div class="legend" id="statusLegend"></div>
-      </section>
-
-      <section>
-        <h2>Base de dados</h2>
-        <div id="dbNodes"></div>
-      </section>
-    </div>
+    <section class="card">
+      <div class="ch"><h2>Chamadas à IA</h2><span class="sub" id="aiSummary"></span></div>
+      <div class="scroll tall">
+        <table>
+          <thead><tr><th>Hora</th><th>Backend</th><th>Réplica de IA</th><th>Resultado</th><th class="r">Tempo</th></tr></thead>
+          <tbody id="aiRecent"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
+</main>
 
-  <section class="full">
-    <div class="section-head">
-      <h2>Chamadas à IA (backend → ai-service, gRPC)</h2>
-      <span class="legend" id="aiSummary"></span>
-    </div>
-    <div class="scroll"><table>
-      <thead><tr><th>Hora</th><th>Backend</th><th>Réplica de IA</th><th>Resultado</th><th>Tempo</th></tr></thead>
-      <tbody id="aiRecent"></tbody>
-    </table></div>
-  </section>
+<div class="tip" id="tip" hidden></div>
 
-  <section class="full">
-    <div class="section-head">
-      <h2>Últimos pedidos</h2>
-      <button id="clearLogs">Limpar histórico</button>
+<div class="modal" id="modal" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="ch">
+      <div><div class="ttl" id="mTitle"></div><div class="msub" id="mSub"></div></div>
+      <div style="display:flex;gap:8px"><button class="btn" id="mReplay">Repetir</button><button class="btn" data-close aria-label="Fechar">✕</button></div>
     </div>
-    <div class="scroll"><table>
-      <thead><tr><th>Hora</th><th>Pedido</th><th>Resposta</th><th>Réplica</th><th>Tempo</th></tr></thead>
-      <tbody id="recent"></tbody>
-    </table></div>
-  </section>
+    <div class="flow"><svg id="mDiagram" viewBox="0 0 900 400" role="img" aria-label="Percurso do pedido"></svg></div>
+    <div class="wf" id="wf"></div>
+    <div class="wftotal"><span id="wfSummary"></span><b id="wfTotal"></b></div>
+    <p class="note" id="wfNote"></p>
+  </div>
 </div>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const shortName = (n) => String(n || '').replace(/^aquapoint-/, '');
+const fmt = (n) => Number(n).toLocaleString('pt-PT');
+const ms = (sec) => Math.round(Number(sec || 0) * 1000);
+const hhmmss = (t) => new Date(t * 1000).toLocaleTimeString('pt-PT');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SVG = (body) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const ICONS = {
+  proxy: SVG('<path d="M3 12h7"/><path d="M10 12l5-6h6"/><path d="M10 12l5 6h6"/><path d="M18 3l3 3-3 3"/><path d="M18 15l3 3-3 3"/>'),
+  web: SVG('<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'),
+  api: SVG('<rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 6.5h.01M6 17.5h.01"/>'),
+  db: SVG('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>'),
+  ai: SVG('<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>'),
+};
+const ICON_COLOR = { proxy: 'var(--ink2)', web: 'var(--accent)', api: 'var(--accent)', db: 'var(--db)', ai: 'var(--ai)' };
+function iconKind(service) {
+  if (service === 'proxy') return 'proxy';
+  if (service === 'frontend') return 'web';
+  if (service === 'backend') return 'api';
+  if (/^db\d*$/.test(service)) return 'db';
+  if (service === 'ai-service') return 'ai';
+  return 'none';
+}
+const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const SERVICE_LABEL = { proxy: 'Proxy (nginx)', frontend: 'Site', backend: 'API', db1: 'Base de dados', db2: 'Base de dados', 'ai-service': 'IA (gRPC)', monitor: 'Monitor' };
+const AI_RESULT = {
+  bebedouro: ['ok', 'É bebedouro'],
+  nao_bebedouro: ['bad', 'Não é bebedouro'],
+  ilegivel: ['warn', 'Imagem ilegível'],
+  indisponivel: ['bad', 'IA indisponível'],
+};
+
+let last = null;        // última resposta do /api/stats
 let lastOk = 0;
+const history = [];     // amostras para os mini-gráficos (uma a cada 2 s)
 
 function level(c) {
   if (!c) return 'bad';
@@ -205,163 +375,483 @@ function level(c) {
 }
 function stateText(c) {
   if (c.state === 'running') {
-    if (c.health === 'healthy') return 'a correr, saudável';
-    if (c.health === 'health: starting') return 'a arrancar';
-    if (c.health === 'unhealthy') return 'com problemas';
-    return 'a correr';
+    if (c.health === 'healthy') return 'Saudável';
+    if (c.health === 'health: starting') return 'A arrancar';
+    if (c.health === 'unhealthy') return 'Com problemas';
+    return 'A correr';
   }
-  return { exited: 'parado', restarting: 'a reiniciar', created: 'criado', paused: 'em pausa' }[c.state] || c.state;
+  return { exited: 'Parado', restarting: 'A reiniciar', created: 'Criado', paused: 'Em pausa' }[c.state] || c.state;
 }
-const statusClass = (s) => (s >= 500 ? 'bad-t' : s >= 400 ? 'warn-t' : 'ok-t');
+const codeClass = (s) => (s >= 500 ? 'bad' : s >= 400 ? 'warn' : s >= 300 ? 'info' : 'ok');
 
-// ---------- Diagrama ----------
-function nodeSvg(x, y, title, sub, lvl) {
-  return `<g class="node ${lvl}" transform="translate(${x - 85},${y - 22})">
-    <rect width="170" height="44" rx="8"></rect>
-    <circle class="${lvl}" cx="16" cy="22" r="5"></circle>
-    <text x="30" y="19" font-size="14" font-weight="600">${esc(title)}</text>
-    <text class="sub" x="30" y="35">${esc(sub)}</text>
-  </g>`;
+/* ====================================================================
+   Diagrama: proxy | Site + API | Base de dados + IA, em blocos separados
+   ==================================================================== */
+const NS = 'http://www.w3.org/2000/svg';
+const curve = (x1, y1, x2, y2) => { const mx = (x1 + x2) / 2; return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`; };
+
+function layout(data) {
+  const by = (s) => data.containers.filter((c) => c.service === s);
+  const fronts = by('frontend'), backs = by('backend'), ais = by('ai-service'), dbs = data.db || [];
+  const G = { mid: { x: 230, w: 240 }, right: { x: 560, w: 320 } };
+  const pos = {};
+  const groups = [];
+  let y = 10;
+  const midGroup = (label, list) => {
+    const n = Math.max(list.length, 1), h = 34 + n * 46;
+    groups.push({ x: G.mid.x, y, w: G.mid.w, h, label, empty: !list.length });
+    list.forEach((c, i) => { pos[c.name] = { x: G.mid.x + 20, y: y + 30 + i * 46, w: 200, h: 36 }; });
+    y += h + 18;
+  };
+  midGroup('SITE', fronts);
+  midGroup('API', backs);
+  const midH = y;
+  y = 10;
+  const rightGroup = (label, list, keyOf) => {
+    const n = Math.max(list.length, 1), h = 34 + n * 56;
+    groups.push({ x: G.right.x, y, w: G.right.w, h, label, empty: !list.length });
+    list.forEach((c, i) => { pos[keyOf(c)] = { x: G.right.x + 20, y: y + 30 + i * 56, w: 280, h: 46 }; });
+    y += h + 18;
+  };
+  rightGroup('BASE DE DADOS', dbs, (d) => 'db:' + d.node);
+  rightGroup('IA', ais, (c) => c.name);
+  const height = Math.max(midH, y) - 8;
+  pos.proxy = { x: 20, y: height / 2 - 32, w: 150, h: 64 };
+  return { fronts, backs, ais, dbs, pos, groups, height };
 }
-function curve(x1, y1, x2, y2) {
-  const mx = (x1 + x2) / 2;
-  return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-}
 
-function drawDiagram(data) {
-  const byService = (s) => data.containers.filter((c) => c.service === s);
-  const proxy = byService('proxy')[0];
-  const fronts = byService('frontend');
-  const backs = byService('backend');
-  const ais = byService('ai-service');
-  const dbs = data.db;
-
-  const P = { x: 110, y: 200 };
-  const midX = 430, dbX = 760;
-  const frontY = fronts.map((_, i) => 64 + i * 58);
-  const backTop = 64 + Math.max(fronts.length, 1) * 58 + 34;
-  const backY = backs.map((_, i) => backTop + i * 58);
-  const dbY = dbs.map((_, i) => 210 + i * 78);
-  const aiTop = (dbY[dbY.length - 1] || 210) + 120;
-  const aiY = ais.map((_, i) => aiTop + i * 58);
-
-  const replicas = [...fronts.map((c, i) => ({ c, y: frontY[i] })), ...backs.map((c, i) => ({ c, y: backY[i] }))];
-  const max = Math.max(1, ...replicas.map((r) => data.perReplica[r.c.name] || 0));
-
-  // Nó da base de dados que tem as ligações dos backends (o "ativo")
+function activeDb(dbs) {
   const online = dbs.filter((d) => d.online);
-  const active = online.length ? online.reduce((a, b) => (b.connections > a.connections ? b : a)) : null;
-
-  let pipes = '', nodes = '';
-  replicas.forEach((r) => {
-    const n = data.perReplica[r.c.name] || 0;
-    const w = n ? 2 + (n / max) * 12 : 1.5;
-    const d = curve(P.x + 85, P.y, midX - 85, r.y);
-    if (n) {
-      pipes += `<path class="pipe base" stroke-width="${w.toFixed(1)}" d="${d}"></path>`;
-      pipes += `<path class="pipe flow-line" stroke-width="2" d="${d}"></path>`;
-    } else {
-      pipes += `<path class="pipe idle" stroke-width="1.5" d="${d}"></path>`;
-    }
-    nodes += nodeSvg(midX, r.y, shortName(r.c.name), `${n} pedidos/min`, level(r.c));
-  });
-
-  if (active) {
-    const ai = dbs.indexOf(active);
-    backs.forEach((c, i) => {
-      if (c.state !== 'running') return;
-      pipes += `<path class="pipe db" stroke-width="2" d="${curve(midX + 85, backY[i], dbX - 85, dbY[ai])}"></path>`;
-    });
-  }
-
-  // Backend -> ai-service (gRPC): espessura conforme as chamadas no último minuto
-  const ai = data.ai || { perPair: {}, perReplica: {} };
-  const aiMax = Math.max(1, ...Object.values(ai.perPair));
-  backs.forEach((b, i) => {
-    if (b.state !== 'running') return;
-    ais.forEach((a, j) => {
-      const n = ai.perPair[`${b.name}|${a.name}`] || 0;
-      const d = curve(midX + 85, backY[i], dbX - 85, aiY[j]);
-      if (n) {
-        pipes += `<path class="pipe ai base" stroke-width="${(2 + (n / aiMax) * 8).toFixed(1)}" d="${d}"></path>`;
-        pipes += `<path class="pipe flow-line" stroke-width="2" d="${d}"></path>`;
-      } else if (a.state === 'running') {
-        pipes += `<path class="pipe ai idle" stroke-width="1.5" d="${d}"></path>`;
-      }
-    });
-  });
-  ais.forEach((a, j) => {
-    nodes += nodeSvg(dbX, aiY[j], shortName(a.name), `${ai.perReplica[a.name] || 0} chamadas/min`, level(a));
-  });
-
-  dbs.forEach((d, i) => {
-    const lvl = !d.online ? 'bad' : d.state === 'Synced' ? 'ok' : 'warn';
-    const sub = d.online ? `${d.state}, ${d.connections} ligações` : 'sem resposta';
-    nodes += nodeSvg(dbX, dbY[i], d.node, sub, lvl);
-  });
-
-  nodes += nodeSvg(P.x, P.y, 'proxy', `${data.totals.lastMinute} pedidos/min`, level(proxy));
-
-  const labels = `
-    <text class="group-label" x="${midX - 85}" y="${frontY[0] - 32}">Site</text>
-    <text class="group-label" x="${midX - 85}" y="${backTop - 32}">API</text>
-    <text class="group-label" x="${dbX - 85}" y="${dbY[0] - 32}">Base de dados</text>
-    ${ais.length ? `<text class="group-label" x="${dbX - 85}" y="${aiTop - 32}">IA (gRPC)</text>` : ''}`;
-
-  const height = Math.max(backY[backY.length - 1] || 300, dbY[dbY.length - 1] || 300, aiY[aiY.length - 1] || 0) + 50;
-  const svg = $('diagram');
-  svg.setAttribute('viewBox', `0 0 880 ${height}`);
-  svg.innerHTML = pipes + labels + nodes;
+  return online.length ? online.reduce((a, b) => (b.connections > a.connections ? b : a)) : null;
 }
 
-// ---------- Tabelas e números ----------
-function render(data) {
-  drawDiagram(data);
+// Desenha o diagrama. Com "focus", só acende o percurso de um pedido (usado no modal)
+function drawDiagram(svg, data, focus) {
+  const L = layout(data);
+  const P = L.pos;
+  const right = (k) => [P[k].x + P[k].w, P[k].y + P[k].h / 2];
+  const left = (k) => [P[k].x, P[k].y + P[k].h / 2];
+  const edges = [];
+  const edge = (a, b, cls, w, active) => { if (P[a] && P[b]) edges.push({ a, b, cls, w, active, d: curve(...right(a), ...left(b)) }); };
 
-  $('containers').innerHTML = data.containers.map((c) => {
+  const replicas = [...L.fronts, ...L.backs];
+  const max = Math.max(1, ...replicas.map((c) => data.perReplica[c.name] || 0));
+  replicas.forEach((c) => {
+    const n = data.perReplica[c.name] || 0;
+    edge('proxy', c.name, n ? 'http' : 'idle', n ? 2 + (n / max) * 9 : 1.2, n > 0);
+  });
+  const act = activeDb(L.dbs);
+  const ai = data.ai || { perPair: {}, perReplica: {} };
+  const aiMax = Math.max(1, ...Object.values(ai.perPair || {}));
+  L.backs.forEach((b) => {
+    if (b.state !== 'running') return;
+    L.dbs.forEach((d) => { if (focus || (act && d.node === act.node)) edge(b.name, 'db:' + d.node, 'sql', 1.6, (data.perReplica[b.name] || 0) > 0); });
+    L.ais.forEach((a) => {
+      const n = (ai.perPair || {})[`${b.name}|${a.name}`] || 0;
+      if (n) edge(b.name, a.name, 'grpc', 1.6 + (n / aiMax) * 5, true);
+      else if (a.state === 'running' || focus) edge(b.name, a.name, 'idle', 1.2);
+    });
+  });
+
+  let out = '';
+  L.groups.forEach((g) => {
+    out += `<rect class="group" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="6"></rect>`;
+    out += `<text class="glabel" x="${g.x + 14}" y="${g.y + 19}">${g.label}</text>`;
+    if (g.empty) out += `<text class="m" x="${g.x + 20}" y="${g.y + 52}">nenhuma réplica</text>`;
+  });
+
+  const lit = new Map((focus ? focus.edges : []).map((e) => [`${e.a}>${e.b}`, e]));
+  edges.forEach((e) => {
+    const key = `${e.a}>${e.b}`;
+    let cls = 'pipe ' + e.cls;
+    let w = e.w;
+    if (focus) {
+      const f = lit.get(key);
+      if (f) { cls = `pipe lit ${f.kind === 'grpc' ? 'grpc' : f.kind === 'sql' ? 'sql' : 'http'}${f.bad ? ' bad' : ''}`; w = 3.5; }
+      else cls += ' dim';
+    }
+    out += `<path class="${cls}" data-edge="${esc(key)}" stroke-width="${w.toFixed(1)}" d="${e.d}"></path>`;
+    if (!focus && e.active) out += `<path class="flowdash" stroke-width="${Math.min(3, Math.max(1.6, w * 0.4)).toFixed(1)}" d="${e.d}" style="animation-delay:-${Date.now() % 1000}ms"></path>`;
+  });
+
+  const nodeSvg = (key, title, sub, lvl, opts = {}) => {
+    const p = P[key];
+    if (!p) return '';
+    const cls = ['node', lvl === 'ok' ? '' : lvl];
+    if (focus) cls.push(focus.nodes.has(key) ? (focus.nodeClass[key] || 'lit') : 'faded');
+    const tall = p.h > 40;
+    const iy = p.y + (tall ? 20 : p.h / 2) - 7;
+    const icon = opts.icon && ICONS[opts.icon]
+      ? ICONS[opts.icon].replace('<svg width="15" height="15"', `<svg x="${p.x + 28}" y="${iy}" width="14" height="14" class="nico" style="color:${ICON_COLOR[opts.icon]}"`)
+      : '';
+    const tx = icon ? 50 : 30;
+    const tag = opts.tag ? `<rect x="${p.x + p.w - 58}" y="${p.y + p.h / 2 - 9}" width="46" height="18" rx="4" style="fill:${opts.tagBg}"></rect><text class="tag" x="${p.x + p.w - 35}" y="${p.y + p.h / 2 + 4}" text-anchor="middle" style="fill:${opts.tagFg}">${opts.tag}</text>` : '';
+    return `<g class="${cls.join(' ')}"${opts.replica ? ` data-replica="${esc(opts.replica)}"` : ''}>
+      <rect class="box" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="6"></rect>
+      <circle class="dot ${lvl}" cx="${p.x + 16}" cy="${p.y + (tall ? 20 : p.h / 2)}" r="4"></circle>
+      ${icon}
+      <text class="name" x="${p.x + tx}" y="${tall ? p.y + 24 : p.y + p.h / 2 + 4.5}" font-size="13" font-weight="500">${esc(title)}</text>
+      ${tall ? `<text class="m" x="${p.x + tx}" y="${p.y + p.h - 10}">${esc(sub)}</text>` : `<text class="m" x="${p.x + p.w - 10}" y="${p.y + p.h / 2 + 4}" text-anchor="end">${esc(sub)}</text>`}
+      ${tag}
+    </g>`;
+  };
+
+  const proxy = data.containers.find((c) => c.service === 'proxy');
+  out += nodeSvg('proxy', 'proxy', `nginx · ${data.totals.lastMinute}/min`, level(proxy), { icon: 'proxy' });
+  replicas.forEach((c) => {
+    const n = data.perReplica[c.name] || 0;
+    const lvl = level(c);
+    out += nodeSvg(c.name, shortName(c.name), lvl === 'bad' ? stateText(c).toLowerCase() : `${n}/min`, lvl, { replica: c.name, icon: iconKind(c.service) });
+  });
+  L.dbs.forEach((d) => {
+    const lvl = !d.online ? 'bad' : d.state === 'Synced' ? 'ok' : 'warn';
+    const sub = d.online ? `${d.state} · ${d.connections} ligações` : 'sem resposta';
+    const isAct = act && act.node === d.node;
+    out += nodeSvg('db:' + d.node, d.node, sub, lvl, isAct ? { icon: 'db', tag: 'ativo', tagBg: 'var(--accent-bg)', tagFg: 'var(--accent)' } : { icon: 'db' });
+  });
+  L.ais.forEach((a) => {
+    const lvl = level(a);
+    const sub = lvl === 'bad' ? stateText(a).toLowerCase() : `${(ai.perReplica || {})[a.name] || 0} chamadas/min`;
+    out += nodeSvg(a.name, shortName(a.name), sub, lvl, { icon: 'ai', tag: 'gRPC', tagBg: 'var(--ai-bg)', tagFg: 'var(--ai)' });
+  });
+
+  svg.setAttribute('viewBox', `0 0 900 ${Math.ceil(L.height)}`);
+  svg.innerHTML = out;
+  return L;
+}
+
+/* ====================================================================
+   Números, tabelas e mini-gráficos
+   ==================================================================== */
+function sparkline(svg, values, color) {
+  if (values.length < 2) { svg.innerHTML = ''; return; }
+  const max = Math.max(...values, 1), min = Math.min(...values, 0);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * 156 + 2, 27 - ((v - min) / span) * 24]);
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const end = pts[pts.length - 1];
+  svg.innerHTML = `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" vector-effect="non-scaling-stroke"></path><circle cx="${end[0]}" cy="${end[1]}" r="2.2" fill="${color}"></circle>`;
+}
+function delta(el, now, before, unit, lowerIsBetter) {
+  if (before === undefined) { el.textContent = 'a recolher histórico'; return; }
+  const diff = now - before;
+  if (!diff) { el.textContent = 'igual ao minuto anterior'; return; }
+  const good = lowerIsBetter ? diff < 0 : diff > 0;
+  const txt = unit === '%'
+    ? `${diff > 0 ? '+' : '−'}${Math.abs(before ? Math.round((diff / before) * 100) : 100)}%`
+    : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} ${unit}`;
+  el.innerHTML = `<span class="${good ? 'pos' : 'neg'}">${txt}</span> face ao minuto anterior`;
+}
+
+function renderKpis(data) {
+  const rpm = data.totals.lastMinute;
+  const avg = ms(data.totals.avgTimeLastMinute);
+  history.push({ rpm, avg });
+  if (history.length > 90) history.shift();
+  const before = history.length > 30 ? history[history.length - 31] : undefined;
+  $('kRpm').textContent = fmt(rpm);
+  $('kAvg').textContent = fmt(avg);
+  delta($('dRpm'), rpm, before && before.rpm, '%', false);
+  delta($('dAvg'), avg, before && before.avg, 'ms', true);
+  sparkline($('sRpm'), history.map((h) => h.rpm), 'var(--accent)');
+  sparkline($('sAvg'), history.map((h) => h.avg), 'var(--accent)');
+
+  const cs = data.containers;
+  const healthy = cs.filter((c) => level(c) === 'ok');
+  const down = cs.filter((c) => level(c) !== 'ok');
+  $('kHealthy').textContent = healthy.length;
+  $('kTotal').textContent = `de ${cs.length}`;
+  $('dHealthy').innerHTML = down.length
+    ? `<span class="neg">${down.length} ${down.length === 1 ? 'com problemas' : 'com problemas'}</span> · ${down.map((c) => esc(shortName(c.name))).join(', ')}`
+    : 'todos a correr sem problemas';
+}
+
+function renderBanner(data) {
+  const down = data.containers.filter((c) => c.state !== 'running');
+  const dbDown = (data.db || []).filter((d) => !d.online);
+  const b = $('banner');
+  if (data.dockerError) {
+    b.className = 'banner bad'; b.hidden = false;
+    b.innerHTML = `<b>Sem acesso ao Docker.</b> ${esc(data.dockerError)}`;
+    return;
+  }
+  if (!down.length && !dbDown.length) { b.hidden = true; return; }
+  const parts = [];
+  if (down.length) {
+    const names = down.map((c) => shortName(c.name));
+    const svcs = [...new Set(down.map((c) => c.service))];
+    let txt = `${names.join(', ')} ${down.length === 1 ? 'está parado' : 'estão parados'}.`;
+    svcs.forEach((s) => {
+      const alive = data.containers.filter((c) => c.service === s && c.state === 'running').map((c) => shortName(c.name));
+      if (alive.length && (s === 'backend' || s === 'frontend' || s === 'ai-service')) txt += ` O tráfego está a ser servido por ${alive.join(' e ')}.`;
+      if (!alive.length && s !== 'monitor') txt += ` Não há nenhuma réplica de ${SERVICE_LABEL[s] || s} a correr.`;
+    });
+    parts.push(`<b>${down.length} ${down.length === 1 ? 'container parado.' : 'containers parados.'}</b> ${esc(txt)}`);
+  }
+  if (dbDown.length) parts.push(`<b>Base de dados:</b> ${esc(dbDown.map((d) => d.node).join(', '))} sem resposta.`);
+  b.className = 'banner'; b.hidden = false;
+  b.innerHTML = parts.join(' ');
+}
+
+function renderHttp(data) {
+  const g = data.statusGroups;
+  const sum = Object.values(g).reduce((a, b) => a + b, 0);
+  const meta = { '2xx': ['var(--ok)', 'Sucesso'], '3xx': ['var(--accent)', 'Redirecionamento ou cache'], '4xx': ['var(--warn)', 'Erro do cliente'], '5xx': ['var(--bad)', 'Erro do servidor'] };
+  $('httpTotal').textContent = `${fmt(sum)} no histórico`;
+  $('statusBars').innerHTML = sum ? Object.entries(g).map(([k, v]) => `<i style="width:${(v / sum) * 100}%;background:${meta[k][0]}"></i>`).join('') : '';
+  $('statusRows').innerHTML = Object.entries(g).map(([k, v]) =>
+    `<span title="${k} ${meta[k][1]}: ${fmt(v)}"><i class="sw" style="background:${meta[k][0]}"></i>${k} <b>${sum ? ((v / sum) * 100).toLocaleString('pt-PT', { maximumFractionDigits: 1 }) : '0'}%</b></span>`).join('');
+}
+
+function renderContainers(data) {
+  const ORDER = ['proxy', 'frontend', 'backend', 'db1', 'db2', 'ai-service', 'monitor'];
+  const rank = (s) => { const i = ORDER.indexOf(s); return i < 0 ? 99 : i; };
+  const cs = [...data.containers].sort((a, b) => rank(a.service) - rank(b.service) || a.replica - b.replica);
+  const replicas = cs.filter((c) => c.service === 'frontend' || c.service === 'backend');
+  const max = Math.max(1, data.totals.lastMinute, ...replicas.map((c) => data.perReplica[c.name] || 0));
+  const aiPer = (data.ai && data.ai.perReplica) || {};
+  const aiMax = Math.max(1, ...Object.values(aiPer));
+  const dbByName = {};
+  (data.db || []).forEach((d) => { dbByName[d.node] = d; });
+  const bar = (n, of, cls, label) => `<div class="load"><div class="t"><i class="${cls || ''}" style="width:${Math.min(100, (n / of) * 100)}%"></i></div><span>${label}</span></div>`;
+
+  $('containers').innerHTML = cs.map((c) => {
     const lvl = level(c);
     const running = c.state === 'running';
-    const btn = c.protected ? '' :
-      `<button data-id="${c.id}" data-verb="${running ? 'stop' : 'start'}" class="${running ? 'danger' : ''}">${running ? 'Parar' : 'Iniciar'}</button>`;
-    return `<tr><td>${esc(shortName(c.name))}</td><td><span class="badge ${lvl}-t">${esc(stateText(c))}</span></td><td>${esc(c.ip || '–')}</td><td>${btn}</td></tr>`;
-  }).join('') || `<tr><td colspan="4">Não foi possível ler os containers. ${esc(data.dockerError || '')}</td></tr>`;
-
-  $('nMinute').textContent = data.totals.lastMinute;
-  $('nAvg').textContent = `${Math.round(data.totals.avgTimeLastMinute * 1000)} ms`;
-  $('nErrors').textContent = data.totals.errorsLastMinute;
-  $('nTotal').textContent = data.totals.logged;
-
-  const g = data.statusGroups, sum = Object.values(g).reduce((a, b) => a + b, 0) || 1;
-  const colors = { '2xx': 'var(--ok)', '3xx': 'var(--pipe)', '4xx': 'var(--warn)', '5xx': 'var(--bad)' };
-  $('statusBars').innerHTML = Object.entries(g).map(([k, v]) => `<span style="width:${(v / sum) * 100}%;background:${colors[k]}"></span>`).join('');
-  $('statusLegend').innerHTML = Object.entries(g).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
-
-  $('dbNodes').innerHTML = data.db.map((d) => {
-    if (!d.online) return `<div class="db-node"><div>${esc(d.node)}<small>Sem resposta (${esc(d.error)})</small></div><span class="badge bad-t">desligado</span></div>`;
-    const lvl = d.state === 'Synced' ? 'ok' : 'warn';
-    return `<div class="db-node"><div>${esc(d.node)}<small>Cluster com ${d.clusterSize} nó${d.clusterSize === 1 ? '' : 's'}, ${d.connections} ligações ativas</small></div><span class="badge ${lvl}-t">${esc(d.state === 'Synced' ? 'sincronizado' : d.state)}</span></div>`;
-  }).join('');
-
-  const aiData = data.ai || { recent: [], lastMinute: 0, unavailableLastMinute: 0 };
-  const aiResult = {
-    bebedouro: ['ok-t', 'é bebedouro'],
-    nao_bebedouro: ['warn-t', 'não é bebedouro'],
-    ilegivel: ['warn-t', 'imagem ilegível'],
-    indisponivel: ['bad-t', 'IA indisponível'],
-  };
-  $('aiSummary').textContent = `${aiData.lastMinute} no último minuto, ${aiData.unavailableLastMinute} sem resposta`;
-  $('aiRecent').innerHTML = aiData.recent.map((r) => {
-    const time = new Date(r.t * 1000).toLocaleTimeString('pt-PT');
-    const [cls, txt] = aiResult[r.result] || ['', r.result];
-    return `<tr><td>${time}</td><td>${esc(shortName(r.backend))}</td><td>${esc(shortName(r.ai) || '–')}</td><td class="${cls}">${esc(txt)}</td><td>${r.ms} ms</td></tr>`;
-  }).join('') || `<tr><td colspan="5">Ainda não há chamadas. Escolhe uma foto ao adicionar um bebedouro.</td></tr>`;
-
-  $('recent').innerHTML = data.recent.map((r) => {
-    const time = new Date(r.t * 1000).toLocaleTimeString('pt-PT');
-    return `<tr><td>${time}</td><td class="uri" title="${esc(r.uri)}">${esc(r.method)} ${esc(r.uri)}</td><td class="${statusClass(r.status)}">${r.status}</td><td>${esc(shortName(r.replica) || '–')}</td><td>${Math.round(r.rt * 1000)} ms</td></tr>`;
-  }).join('') || `<tr><td colspan="5">Ainda não há pedidos. Abre a app em localhost:8080 para gerar tráfego.</td></tr>`;
+    let load = '–';
+    if (c.service === 'proxy') load = bar(data.totals.lastMinute, max, '', `${data.totals.lastMinute}/min`);
+    else if (c.service === 'frontend' || c.service === 'backend') { const n = data.perReplica[c.name] || 0; load = bar(n, max, '', `${n}/min`); }
+    else if (c.service === 'ai-service') { const n = aiPer[c.name] || 0; load = bar(n, aiMax, 'ai', `${n}/min`); }
+    else if (dbByName[c.service]) { const d = dbByName[c.service]; load = d.online ? `${d.connections} ligações` : 'sem resposta'; }
+    const action = c.protected ? ''
+      : `<button class="btn sm ${running ? 'danger' : 'go'}" data-id="${c.id}" data-verb="${running ? 'stop' : 'start'}">${running ? 'Parar' : 'Iniciar'}</button>`;
+    const hoverable = c.service === 'frontend' || c.service === 'backend';
+    return `<tr class="${running ? '' : 'off'}"${hoverable ? ` data-replica="${esc(c.name)}"` : ''}>
+      <td class="name"><span class="ico ${iconKind(c.service)}">${ICONS[iconKind(c.service)] || ''}</span>${esc(shortName(c.name))}</td>
+      <td><span class="st ${lvl}">${esc(stateText(c))}</span></td>
+      <td>${esc(c.ip || '–')}</td>
+      <td>${load}</td>
+      <td class="r">${action}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" class="empty">Não foi possível ler os containers. ${esc(data.dockerError || '')}</td></tr>`;
 }
 
+function renderRecent(data) {
+  $('recentSub').textContent = `${data.recent.length} mais recentes`;
+  $('recent').innerHTML = data.recent.map((r, i) => `<tr>
+      <td>${hhmmss(r.t)}</td>
+      <td class="uri" title="${esc(r.method + ' ' + r.uri)}"><span class="meth">${esc(r.method)}</span>${esc(r.uri)}</td>
+      <td><span class="code ${codeClass(r.status)}">${r.status}</span></td>
+      <td>${esc(shortName(r.replica) || '–')}</td>
+      <td class="r">${fmt(ms(r.rt))} ms</td>
+      <td class="r"><button class="eye" data-i="${i}" aria-label="Ver percurso de ${esc(r.method + ' ' + r.uri)}" title="Ver percurso">${EYE}</button></td>
+    </tr>`).join('') || `<tr><td colspan="6" class="empty">Ainda não há pedidos. Abre a app em localhost:8080 para gerar tráfego.</td></tr>`;
+
+  const ai = data.ai || { recent: [], lastMinute: 0, unavailableLastMinute: 0 };
+  $('aiSummary').textContent = `${ai.lastMinute} no último minuto · ${ai.unavailableLastMinute} sem resposta`;
+  $('aiRecent').innerHTML = ai.recent.map((r) => {
+    const [cls, txt] = AI_RESULT[r.result] || ['warn', r.result];
+    return `<tr><td>${hhmmss(r.t)}</td><td>${esc(shortName(r.backend))}</td><td>${esc(shortName(r.ai) || '–')}</td><td><span class="st ${cls}${r.result === 'bebedouro' ? ' yes' : r.result === 'nao_bebedouro' ? ' no' : ''}">${esc(txt)}</span></td><td class="r">${fmt(r.ms)} ms</td></tr>`;
+  }).join('') || `<tr><td colspan="5" class="empty">Ainda não há chamadas. Escolhe uma foto ao adicionar um bebedouro.</td></tr>`;
+}
+
+function render(data) {
+  last = data;
+  renderBanner(data);
+  renderKpis(data);
+  drawDiagram($('diagram'), data);
+  markHover();
+  renderHttp(data);
+  renderContainers(data);
+  renderRecent(data);
+  if (tipFor) showTip(tipFor);
+}
+
+/* ====================================================================
+   Caixa com os últimos pedidos de uma réplica (rato por cima ou clique)
+   ==================================================================== */
+const tip = $('tip');
+let tipFor = null, pinned = false, mouse = { x: 0, y: 0 };
+
+function showTip(name) {
+  if (!last) return;
+  const c = last.containers.find((x) => x.name === name);
+  if (!c) { hideTip(true); return; }
+  tipFor = name;
+  const s = (last.replicaStats || {})[name] || { recent: [], lastMinute: 0, avgTime: 0, errors: 0 };
+  const lvl = level(c);
+  const rows = s.recent.map((r) => `<div class="rq"><span class="t">${hhmmss(r.t)}</span><span class="u">${esc(r.method)} ${esc(r.uri)}</span><span class="code ${codeClass(r.status)}">${r.status}</span><span class="ms">${fmt(ms(r.rt))} ms</span></div>`).join('');
+  tip.innerHTML = `
+    <div class="th"><div><b>${esc(shortName(name))}</b><span class="d">${esc(c.ip || 'sem IP')}${c.uptime ? ' · a correr há ' + esc(c.uptime) : ''}</span></div><span class="st ${lvl}">${esc(stateText(c))}</span></div>
+    <div class="stats"><div><b>${s.lastMinute}</b><span>pedidos/min</span></div><div><b>${fmt(ms(s.avgTime))} ms</b><span>tempo médio</span></div><div><b class="${s.errors ? 'neg' : ''}">${s.errors}</b><span>erros 5xx</span></div></div>
+    <div class="hd">Últimos pedidos atendidos</div>
+    ${rows || '<div class="none">Ainda não atendeu pedidos.</div>'}
+    <div class="ft">${pinned ? 'Fixada. Clica fora ou carrega em Esc para fechar.' : 'Clica para fixar esta caixa.'}</div>`;
+  tip.classList.toggle('pinned', pinned);
+  tip.hidden = false;
+  placeTip();
+  markHover();
+}
+function placeTip() {
+  if (pinned && tip.dataset.placed) return;
+  const r = tip.getBoundingClientRect();
+  let x = mouse.x + 16, y = mouse.y + 12;
+  if (x + r.width > innerWidth - 12) x = mouse.x - r.width - 16;
+  if (y + r.height > innerHeight - 12) y = Math.max(12, innerHeight - r.height - 12);
+  tip.style.left = Math.max(12, x) + 'px';
+  tip.style.top = y + 'px';
+  if (pinned) tip.dataset.placed = '1';
+}
+function hideTip(force) {
+  if (pinned && !force) return;
+  pinned = false; tipFor = null; tip.hidden = true; delete tip.dataset.placed;
+  markHover();
+}
+function markHover() {
+  document.querySelectorAll('#diagram [data-replica]').forEach((g) => g.classList.toggle('hover', g.dataset.replica === tipFor));
+}
+function hoverTarget(e) { const el = e.target.closest('[data-replica]'); return el ? el.dataset.replica : null; }
+
+[$('diagram'), $('containers')].forEach((area) => {
+  area.addEventListener('mousemove', (e) => {
+    mouse = { x: e.clientX, y: e.clientY };
+    if (pinned) return;
+    if (e.target.closest('button')) { hideTip(); return; }
+    const name = hoverTarget(e);
+    if (name) { if (name !== tipFor) showTip(name); else placeTip(); } else hideTip();
+  });
+  area.addEventListener('mouseleave', () => hideTip());
+  area.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    const name = hoverTarget(e);
+    if (!name) return;
+    mouse = { x: e.clientX, y: e.clientY };
+    pinned = !(pinned && tipFor === name);
+    delete tip.dataset.placed;
+    if (pinned) showTip(name); else hideTip(true);
+    e.stopPropagation();
+  });
+});
+document.addEventListener('click', (e) => { if (pinned && !tip.contains(e.target)) hideTip(true); });
+
+/* ====================================================================
+   Modal com o percurso de um pedido
+   ==================================================================== */
+const modal = $('modal');
+let modalReq = null, modalData = null, runId = 0, lastEye = null;
+
+function pathOf(r, data) {
+  const c = data.containers.find((x) => x.name === r.replica);
+  const edges = [], nodes = new Set(['proxy']), nodeClass = {};
+  if (!c) return { edges, nodes, nodeClass, service: null };
+  nodes.add(c.name);
+  edges.push({ a: 'proxy', b: c.name, kind: 'http', bad: r.status >= 500 });
+  if (r.status >= 500) nodeClass[c.name] = 'lit-bad';
+  if (c.service === 'backend') {
+    if (r.ai) {
+      const bad = r.ai.result === 'indisponivel' || !r.ai.ai;
+      const target = r.ai.ai || (data.containers.find((x) => x.service === 'ai-service') || {}).name;
+      if (target) { edges.push({ a: c.name, b: target, kind: 'grpc', bad }); nodes.add(target); nodeClass[target] = bad ? 'lit-bad' : 'lit-ai'; }
+    }
+    const usesDb = /^\/api\//.test(r.uri) && !/check-image/.test(r.uri) && r.status < 500;
+    const act = activeDb(data.db || []);
+    if (usesDb && act) { edges.push({ a: c.name, b: 'db:' + act.node, kind: 'sql' }); nodes.add('db:' + act.node); }
+  }
+  return { edges, nodes, nodeClass, service: c.service };
+}
+
+function stagesOf(r, p) {
+  const total = ms(r.rt);
+  const rep = shortName(r.replica) || '–';
+  if (!p.service) return [['Proxy (nginx)', 'sem réplica a responder', total, 'var(--bad)']];
+  if (p.service === 'frontend') return [['Site', `${rep} · ficheiro do site`, total, 'var(--accent)']];
+  const out = [];
+  let rest = total;
+  if (r.ai) {
+    const bad = r.ai.result === 'indisponivel';
+    const [, txt] = AI_RESULT[r.ai.result] || ['', r.ai.result];
+    out.push(['Classificar imagem', `gRPC · ${shortName(r.ai.ai) || 'sem réplica'} · ${txt.toLowerCase()}`, r.ai.ms, bad ? 'var(--bad)' : 'var(--ai)']);
+    rest = Math.max(0, total - r.ai.ms);
+  }
+  const usesDb = p.edges.some((e) => e.kind === 'sql');
+  out.unshift(['API', `${rep}${usesDb ? ' · inclui a base de dados' : ''}`, rest, usesDb ? 'var(--db)' : 'var(--accent)']);
+  return out;
+}
+
+function openModal(i) {
+  if (!last || !last.recent[i]) return;
+  modalReq = last.recent[i];
+  modalData = last; // fica fixo enquanto o modal está aberto
+  const r = modalReq;
+  $('mTitle').innerHTML = `<span class="mono">${esc(r.method)} ${esc(r.uri)}</span><span class="code ${codeClass(r.status)}">${r.status}</span>`;
+  $('mSub').textContent = `${hhmmss(r.t)} · ${r.replica ? 'atendido por ' + shortName(r.replica) : 'sem réplica'}`;
+  modal.hidden = false;
+  hideTip(true);
+  modal.querySelector('.dialog [data-close]').focus();
+  playPath();
+}
+function closeModal() { modal.hidden = true; runId++; if (lastEye) lastEye.focus(); }
+
+async function playPath() {
+  const my = ++runId;
+  const r = modalReq, data = modalData;
+  const p = pathOf(r, data);
+  const svg = $('mDiagram');
+  // começa só com o proxy aceso e vai acendendo cada etapa
+  const shown = { edges: [], nodes: new Set(['proxy']), nodeClass: {} };
+  drawDiagram(svg, data, shown);
+  const stages = stagesOf(r, p);
+  const total = stages.reduce((s, x) => s + x[2], 0) || 1;
+  let acc = 0;
+  $('wf').innerHTML = stages.map(([l, sub, v, col]) => { const left = (acc / total) * 100; acc += v; return `<div class="wfrow"><div class="lbl">${esc(l)}<small>${esc(sub)}</small></div><div class="track"><div class="bar" style="left:${left}%;width:${(v / total) * 100}%;background:${col}"></div></div><div class="ms">${fmt(v)} ms</div></div>`; }).join('');
+  $('wfTotal').textContent = `${fmt(ms(r.rt))} ms`;
+  $('wfSummary').textContent = r.status >= 500 ? 'O pedido falhou no servidor.' : r.ai && r.ai.result === 'indisponivel' ? 'A IA não respondeu a tempo; o ponto fica pendente para revisão.' : 'Pedido concluído.';
+  $('wfNote').textContent = p.edges.some((e) => e.kind === 'sql') ? `A ligação à base de dados é deduzida: os pedidos à API usam o nó ativo (${(activeDb(data.db || []) || {}).node || '–'}).` : '';
+
+  for (const e of p.edges) {
+    if (my !== runId) return;
+    shown.edges.push(e);
+    drawDiagram(svg, data, shown);
+    const path = svg.querySelector(`[data-edge="${CSS.escape(e.a + '>' + e.b)}"]`);
+    if (path && !reduceMotion) await travel(svg, path, e.bad ? 'var(--bad)' : e.kind === 'grpc' ? 'var(--ai)' : e.kind === 'sql' ? 'var(--db)' : 'var(--accent)', e.bad ? 1200 : 650);
+    if (my !== runId) return;
+    shown.nodes.add(e.b);
+    if (p.nodeClass[e.b]) shown.nodeClass[e.b] = p.nodeClass[e.b];
+    drawDiagram(svg, data, shown);
+  }
+}
+function travel(svg, path, color, dur) {
+  return new Promise((done) => {
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('r', '5'); dot.setAttribute('fill', color);
+    svg.appendChild(dot);
+    const len = path.getTotalLength(), t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      const pt = path.getPointAtLength(len * k);
+      dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+      if (k < 1 && dot.isConnected) requestAnimationFrame(step); else { dot.remove(); done(); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+$('recent').addEventListener('click', (e) => {
+  const b = e.target.closest('button.eye');
+  if (!b) return;
+  lastEye = b;
+  openModal(Number(b.dataset.i));
+});
+modal.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
+$('mReplay').addEventListener('click', playPath);
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!modal.hidden) closeModal(); else hideTip(true);
+});
+
+/* ====================================================================
+   Atualização e ações
+   ==================================================================== */
 async function refresh() {
   try {
     const res = await fetch('/api/stats');
@@ -380,23 +870,40 @@ async function post(url) {
   const res = await fetch(url, { method: 'POST' });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body;
 }
 
 $('containers').addEventListener('click', async (ev) => {
   const btn = ev.target.closest('button[data-id]');
   if (!btn) return;
   btn.disabled = true;
-  $('message').textContent = '';
-  try {
-    await post(`/api/containers/${btn.dataset.id}/${btn.dataset.verb}`);
-  } catch (e) {
-    $('message').textContent = e.message;
-  }
+  $('message').textContent = ''; $('message').classList.remove('info');
+  try { await post(`/api/containers/${btn.dataset.id}/${btn.dataset.verb}`); } catch (e) { $('message').textContent = e.message; }
   refresh();
 });
 
 $('clearLogs').addEventListener('click', async () => {
+  $('message').textContent = ''; $('message').classList.remove('info');
   try { await post('/api/logs/clear'); } catch (e) { $('message').textContent = e.message; }
+  refresh();
+});
+
+$('loadTest').addEventListener('click', async () => {
+  const btn = $('loadTest');
+  btn.disabled = true;
+  btn.textContent = 'A testar…';
+  $('message').classList.add('info');
+  $('message').textContent = 'Teste de carga a decorrer: 100 pedidos GET ao frontend e 100 ao backend…';
+  try {
+    const r = await post('/api/loadtest');
+    const secs = (r.durationMs / 1000).toLocaleString('pt-PT', { maximumFractionDigits: 1 });
+    $('message').textContent = `Teste de carga: ${r.total} pedidos em ${secs} s · ${r.ok} OK · ${r.failed} falhados (frontend ${r.frontend.ok}/${r.frontend.ok + r.frontend.failed}, backend ${r.backend.ok}/${r.backend.ok + r.backend.failed})`;
+  } catch (e) {
+    $('message').classList.remove('info');
+    $('message').textContent = e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Testar carga';
   refresh();
 });
 

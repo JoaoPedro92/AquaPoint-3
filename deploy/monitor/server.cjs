@@ -26,6 +26,19 @@ function docker(method, apiPath) {
   });
 }
 
+// "Up 2 hours (healthy)" -> "2 h"
+function uptimePt(status) {
+  const m = /^Up (.+?)(?: \(.+\))?$/.exec(status || '');
+  if (!m) return null;
+  const rules = [
+    [/Less than a second/, 'menos de 1 s'], [/About a minute/, '1 min'], [/About an hour/, '1 h'],
+    [/(\d+) seconds?/, '$1 s'], [/(\d+) minutes?/, '$1 min'], [/(\d+) hours?/, '$1 h'],
+    [/(\d+) days?/, '$1 dias'], [/(\d+) weeks?/, '$1 semanas'], [/(\d+) months?/, '$1 meses'],
+  ];
+  for (const [re, rep] of rules) if (re.test(m[1])) return m[1].replace(re, rep);
+  return m[1];
+}
+
 async function getContainers() {
   const filters = encodeURIComponent(JSON.stringify({ label: [`com.docker.compose.project=${PROJECT}`] }));
   const list = await docker('GET', `/containers/json?all=1&filters=${filters}`);
@@ -42,6 +55,7 @@ async function getContainers() {
         state: c.State,
         status: c.Status,
         health,
+        uptime: c.State === 'running' ? uptimePt(c.Status) : null,
         ip: (nets[0] && nets[0].IPAddress) || null,
         protected: PROTECTED.includes(service),
       };
@@ -151,6 +165,32 @@ async function buildStats() {
     aiPerReplica[e.ai] = (aiPerReplica[e.ai] || 0) + 1;
   });
 
+  // Por réplica: últimos pedidos (para a caixa ao passar o rato), tempo médio e erros no último minuto
+  const replicaStats = {};
+  const statFor = (r) => (replicaStats[r] = replicaStats[r] || { recent: [], lastMinute: 0, rtSum: 0, errors: 0 });
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const e = entries[i];
+    const r = replicaOf(e);
+    if (!r) continue;
+    const s = statFor(r);
+    if (s.recent.length < 6) s.recent.push({ t: e.t, method: e.method, uri: e.uri, status: e.status, rt: e.rt });
+  }
+  lastMinute.forEach((e) => {
+    const r = replicaOf(e);
+    if (!r) return;
+    const s = statFor(r);
+    s.lastMinute++; s.rtSum += Number(e.rt || 0); if (e.status >= 500) s.errors++;
+  });
+  Object.values(replicaStats).forEach((s) => { s.avgTime = s.lastMinute ? s.rtSum / s.lastMinute : 0; delete s.rtSum; });
+
+  // Chamada à IA feita pela mesma réplica durante o pedido (para desenhar o percurso)
+  const aiDuring = (e, rep) => {
+    if (!rep) return null;
+    const start = e.t - Number(e.rt || 0) - 0.05;
+    const c = aiEntries.find((a) => a.backend === rep && a.t >= start && a.t <= e.t + 0.05);
+    return c ? { result: c.result, ms: c.ms, ai: c.ai } : null;
+  };
+
   const avg = (arr) => (arr.length ? arr.reduce((s, e) => s + Number(e.rt || 0), 0) / arr.length : 0);
 
   return {
@@ -166,9 +206,11 @@ async function buildStats() {
     },
     perReplica,
     statusGroups,
-    recent: entries.slice(-40).reverse().map((e) => ({
-      t: e.t, method: e.method, uri: e.uri, status: e.status, rt: e.rt, replica: replicaOf(e),
-    })),
+    replicaStats,
+    recent: entries.slice(-40).reverse().map((e) => {
+      const replica = replicaOf(e);
+      return { t: e.t, method: e.method, uri: e.uri, status: e.status, rt: e.rt, replica, ai: aiDuring(e, replica) };
+    }),
     ai: {
       lastMinute: aiLastMinute.length,
       unavailableLastMinute: aiLastMinute.filter((e) => e.result === 'indisponivel').length,
@@ -177,6 +219,48 @@ async function buildStats() {
       recent: aiEntries.slice(-20).reverse(),
     },
   };
+}
+
+// ---------- Teste de carga ----------
+// Envia pedidos GET ao proxy (que reparte pelas réplicas), tal como faria um browser.
+const LOAD_HOST = process.env.LOAD_HOST || 'proxy';
+const LOAD_PATHS = {
+  frontend: ['/', '/favicon.svg'],
+  backend: ['/api/types', '/api/states', '/api/types/1', '/api/types/2', '/api/types/3'],
+};
+const LOAD_PER_TARGET = 100;
+const LOAD_CONCURRENCY = 10;
+let loadRunning = false;
+
+function getOnce(p) {
+  return new Promise((resolve) => {
+    const req = http.get({ host: LOAD_HOST, port: 80, path: p, headers: { 'User-Agent': 'aquapoint-loadtest' } }, (res) => {
+      res.resume();
+      res.on('end', () => resolve(res.statusCode < 400));
+    });
+    req.setTimeout(5000, () => req.destroy());
+    req.on('error', () => resolve(false));
+  });
+}
+
+async function runLoadTest() {
+  const jobs = [];
+  for (const [target, paths] of Object.entries(LOAD_PATHS)) {
+    for (let i = 0; i < LOAD_PER_TARGET; i++) jobs.push({ target, path: paths[i % paths.length] });
+  }
+  const result = { frontend: { ok: 0, failed: 0 }, backend: { ok: 0, failed: 0 } };
+  const start = Date.now();
+  let next = 0;
+  async function worker() {
+    while (next < jobs.length) {
+      const job = jobs[next++];
+      const ok = await getOnce(job.path);
+      result[job.target][ok ? 'ok' : 'failed']++;
+    }
+  }
+  await Promise.all(Array.from({ length: LOAD_CONCURRENCY }, worker));
+  const ok = result.frontend.ok + result.backend.ok;
+  return { total: jobs.length, ok, failed: jobs.length - ok, durationMs: Date.now() - start, ...result };
 }
 
 // ---------- Servidor HTTP ----------
@@ -206,6 +290,11 @@ http.createServer(async (req, res) => {
       fs.truncateSync(LOG_FILE, 0);
       try { fs.truncateSync(AI_LOG_FILE, 0); } catch {} // pode ainda não existir
       return send(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && req.url === '/api/loadtest') {
+      if (loadRunning) return send(res, 409, { error: 'Já está a decorrer um teste de carga.' });
+      loadRunning = true;
+      try { return send(res, 200, await runLoadTest()); } finally { loadRunning = false; }
     }
     send(res, 404, { error: 'Não encontrado.' });
   } catch (e) {
