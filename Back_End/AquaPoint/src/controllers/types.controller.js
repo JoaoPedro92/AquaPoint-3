@@ -17,7 +17,7 @@ export async function getTypeById(req, res) {
 
   try {
     const type = await findTypeById(id);
-    if(!local) return res.status(404).json({ error: `Type with ID: ${id} not found`});
+    if(!type) return res.status(404).json({ error: `Type with ID: ${id} not found`});
 
     res.json(type);
   } catch (err) {

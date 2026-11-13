@@ -16,10 +16,10 @@ export async function getStateById(req, res) {
   const id = Number(req.params.id);
 
   try {
-    const trustLevel = await findStateById(id);
-    if(!local) return res.status(404).json({ error: `State with ID: ${id} not found`});
+    const state = await findStateById(id);
+    if(!state) return res.status(404).json({ error: `State with ID: ${id} not found`});
 
-    res.json(trustLevel);
+    res.json(state);
   } catch (err) {
     console.error(err);
     res.status(500).json(err.message);

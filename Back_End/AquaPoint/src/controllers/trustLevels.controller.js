@@ -17,7 +17,7 @@ export async function getTrustLevelById(req, res) {
 
   try {
     const trustLevel = await findTrustLevelById(id);
-    if(!local) return res.status(404).json({ error: `Trust Level with ID: ${id} not found`});
+    if(!trustLevel) return res.status(404).json({ error: `Trust Level with ID: ${id} not found`});
 
     res.json(trustLevel);
   } catch (err) {
