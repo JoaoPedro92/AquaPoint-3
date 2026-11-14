@@ -244,7 +244,8 @@
 </style>
 
 <script setup>
-    import { ref, onMounted, nextTick, watch } from 'vue';
+    import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
+    import { io } from 'socket.io-client'
     import addNewMarkerImg from '../assets/images/map-markers/add_new_aqua_point_marker.png'
     import { Offcanvas } from 'bootstrap';
     import L, { icon } from 'leaflet'
@@ -315,6 +316,11 @@
     }
     const userMarkerRef = ref(null)
     const showLegend = ref(false)
+
+    // Tempo real: ligação WebSocket ao backend (ver LigarTempoReal)
+    let socket = null
+    // IDs dos bebedouros que já têm marcador no mapa, para nunca desenhar o mesmo duas vezes
+    const shownPointIds = new Set()
 
     onMounted(async() => {
         
@@ -414,6 +420,7 @@
         }
 
         SetUpAquapointsOnMap()
+        LigarTempoReal()
 
         useModal.setRemovedFavoriteCallback(async () => {
             await GetUserFavoritePoints()
@@ -424,6 +431,37 @@
         })
     })
 
+
+    // Ao sair da página do mapa, fecha a ligação (senão ficava aberta em segundo plano)
+    onUnmounted(() => {
+        if (socket) {
+            socket.disconnect()
+            socket = null
+        }
+    })
+
+    // Abre a ligação WebSocket e fica à escuta de bebedouros novos.
+    // io() sem URL liga-se ao mesmo endereço da página (o Nginx encaminha /socket.io/ para o backend).
+    // transports: ['websocket'] salta o "long-polling" inicial do Socket.IO: com 3 réplicas do backend,
+    // o polling precisaria de sticky sessions no Nginx; uma ligação WebSocket fica sempre na mesma réplica.
+    function LigarTempoReal() {
+        socket = io({ transports: ['websocket'] })
+
+        socket.on('connect', () => console.log('[tempo real] ligado', socket.id))
+        socket.on('disconnect', (reason) => console.log('[tempo real] desligado:', reason))
+
+        socket.on('bebedouro:novo', (point) => {
+            // Guarda na lista para os filtros o terem em conta
+            if (!aquapointsList.value.some(p => p.id === point.id)) {
+                aquapointsList.value.push(point)
+            }
+
+            if (shownPointIds.has(point.id)) return
+            if (!ShouldShowPoint(point)) return
+
+            AddMarkerToMap(point)
+        })
+    }
 
     // Fica a aguardar que a variavel modoAdicionar altere e reaja à mudança mudando o tipo de cursor
     watch(AddNewMode, (val) => {
@@ -448,6 +486,7 @@
     })
 
     function AddMarkerToMap(point){
+        shownPointIds.add(point.id)
         const marker = L.marker(
             [point.latitude, point.longitude], 
             { 
@@ -533,6 +572,7 @@
                 mapaRef.value.removeLayer(layer)
             }
         })
+        shownPointIds.clear()
     }
 
     async function GetUserFavoritePoints(){
@@ -572,20 +612,26 @@
 
         aquapointsList.value = await GetAquapointsList()
         //console.log(aquapointsList)
-        
+
         aquapointsList.value
-            .filter(point => activeFilters.value.states.length === 0 || activeFilters.value.states.includes(point.state_name))
-            .filter(point => activeFilters.value.types.length === 0 || activeFilters.value.types.includes(point.type_name))
-            .filter(point => activeCityFilter.value.length === 0 || activeCityFilter.value.some(city => point.local_name.toLowerCase().includes(city.toLowerCase())))
-            .forEach(point => {
-                if (point.isPending != 1) {
-                    AddMarkerToMap(point)
-                } else if (Auth.isLoggedIn && Auth.user.id === point.createdBy) {
-                    AddMarkerToMap(point)
-                }
-            })        
+            .filter(point => ShouldShowPoint(point))
+            // pode já ter chegado pelo WebSocket enquanto esperávamos pela lista
+            .filter(point => !shownPointIds.has(point.id))
+            .forEach(point => AddMarkerToMap(point))
 
         loadingMarkers.value = false
+    }
+
+    // Regras para um ponto aparecer no mapa: passa os filtros ativos e, se estiver
+    // pendente de aprovação, só o vê quem o criou. Usado no carregamento inicial
+    // e nos bebedouros que chegam em tempo real.
+    function ShouldShowPoint(point) {
+        if (activeFilters.value.states.length > 0 && !activeFilters.value.states.includes(point.state_name)) return false
+        if (activeFilters.value.types.length > 0 && !activeFilters.value.types.includes(point.type_name)) return false
+        if (activeCityFilter.value.length > 0 && !activeCityFilter.value.some(city => (point.local_name || '').toLowerCase().includes(city.toLowerCase()))) return false
+
+        if (point.isPending != 1) return true
+        return Auth.isLoggedIn && Auth.user.id === point.createdBy
     }
 
     function AddCityFilterToList(){        
@@ -744,7 +790,8 @@
         loadingMarkers.value = true
         newPoint.id = await AddNewAquaPoint(newPoint)
         if(!newPoint.id) return
-        AddMarkerToMap(newPoint)
+        // O evento 'bebedouro:novo' pode chegar antes da resposta do POST e já ter desenhado o marcador
+        if (!shownPointIds.has(newPoint.id)) AddMarkerToMap(newPoint)
         loadingMarkers.value = false
 
     }

@@ -32,10 +32,22 @@ services:
       AI_SERVICE_URL: ai-service:50051
       # Cada chamada à IA fica registada aqui (lido pelo painel de monitorização)
       AI_LOG_FILE: /logs/ai/calls.json
+      # Redis liga as réplicas entre si para o tempo real (Socket.IO)
+      REDIS_URL: redis://redis:6379
     volumes:
       - ai-logs:/logs/ai
+    depends_on:
+      - redis
     deploy:
       replicas: 3
+
+  # Redis: só serve de "carteiro" entre as réplicas do backend (pub/sub).
+  # Quando a réplica A cria um bebedouro, publica o evento no Redis e as
+  # réplicas B e C reenviam-no aos browsers que estão ligados a elas.
+  # Não guarda dados da aplicação, por isso não precisa de volume.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
 
   frontend:
     image: ghcr.io/joaopedro92/aquapoint-frontend:latest

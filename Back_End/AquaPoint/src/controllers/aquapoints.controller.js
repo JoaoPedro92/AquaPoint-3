@@ -2,6 +2,7 @@ import { pool } from "../db.js";
 import { findUserById } from "./user.controller.js";
 import { findFavoritesByUserId } from "./favorites.controller.js";
 import { classifyImage } from "../ai/aiClient.js";
+import { emitNovoBebedouro } from "../realtime.js";
 
 
 // GET /aquapoints
@@ -95,7 +96,8 @@ export async function getCountPendingAquapoints(req, res){
 export async function createAquapoint(req, res){
   const { point_name, image, point_type, point_trust, local_id, state_id, latitude, longitude, createdBy, isPending } = req.body;
 
-  if(!point_name || !image || !point_type || !point_trust || !local_id || !state_id || !latitude || !longitude || !createdBy || !isPending){
+  // isPending pode ser 0 (ponto já aprovado), por isso só falha se não vier de todo
+  if(!point_name || !image || !point_type || !point_trust || !local_id || !state_id || !latitude || !longitude || !createdBy || isPending === undefined || isPending === null){
     return res.status(400).json({ error: 'All fields are required' })
   }
 
@@ -124,6 +126,21 @@ export async function createAquapoint(req, res){
     )
 
     res.status(201).json({ message: 'Aquapoint created successfully', id: result.insertId, aiChecked })
+
+    // Tempo real: avisa todos os mapas abertos de que há um bebedouro novo.
+    // Vamos buscar o ponto com os JOINs (state_name, type_name, local_name...)
+    // porque o mapa precisa desses nomes para escolher a cor e aplicar filtros.
+    // A imagem fica de fora: pode ter vários MB e seria enviada a toda a gente;
+    // quando alguém clica no marcador, o mapa já vai buscar o ponto completo.
+    try {
+      const novo = await findAquapointById(result.insertId)
+      if (novo) {
+        const { image: _semImagem, ...semImagem } = novo
+        emitNovoBebedouro(semImagem)
+      }
+    } catch (err) {
+      console.error('Falha ao emitir bebedouro:novo', err)
+    }
   }
   catch(err){
     return res.status(500).json({ error: err.message })

@@ -315,6 +315,9 @@ http.createServer(async (req, res) => {
     if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
       return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'), 'text/html; charset=utf-8');
     }
+    if (req.method === 'GET' && req.url.split('?')[0] === '/styles.css') {
+      return send(res, 200, fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8'), 'text/css; charset=utf-8');
+    }
     if (req.method === 'GET' && req.url === '/api/stats') {
       return send(res, 200, await buildStats());
     }
