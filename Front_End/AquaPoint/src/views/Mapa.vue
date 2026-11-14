@@ -317,7 +317,7 @@
     const userMarkerRef = ref(null)
     const showLegend = ref(false)
 
-    // Tempo real: ligação WebSocket ao backend (ver LigarTempoReal)
+    // Tempo real: ligação WebSocket ao backend (ver ConnectRealtime)
     let socket = null
     // IDs dos bebedouros que já têm marcador no mapa, para nunca desenhar o mesmo duas vezes
     const shownPointIds = new Set()
@@ -420,7 +420,7 @@
         }
 
         SetUpAquapointsOnMap()
-        LigarTempoReal()
+        ConnectRealtime()
 
         useModal.setRemovedFavoriteCallback(async () => {
             await GetUserFavoritePoints()
@@ -444,7 +444,7 @@
     // io() sem URL liga-se ao mesmo endereço da página (o Nginx encaminha /socket.io/ para o backend).
     // transports: ['websocket'] salta o "long-polling" inicial do Socket.IO: com 3 réplicas do backend,
     // o polling precisaria de sticky sessions no Nginx; uma ligação WebSocket fica sempre na mesma réplica.
-    function LigarTempoReal() {
+    function ConnectRealtime() {
         socket = io({ transports: ['websocket'] })
 
         socket.on('connect', () => console.log('[tempo real] ligado', socket.id))

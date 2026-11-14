@@ -2,7 +2,7 @@ import { pool } from "../db.js";
 import { findUserById } from "./user.controller.js";
 import { findFavoritesByUserId } from "./favorites.controller.js";
 import { classifyImage } from "../ai/aiClient.js";
-import { emitNovoBebedouro } from "../realtime.js";
+import { emitNewAquapoint } from "../realtime.js";
 
 
 // GET /aquapoints
@@ -136,7 +136,7 @@ export async function createAquapoint(req, res){
       const novo = await findAquapointById(result.insertId)
       if (novo) {
         const { image: _semImagem, ...semImagem } = novo
-        emitNovoBebedouro(semImagem)
+        emitNewAquapoint(semImagem)
       }
     } catch (err) {
       console.error('Falha ao emitir bebedouro:novo', err)

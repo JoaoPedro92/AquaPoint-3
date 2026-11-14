@@ -41,7 +41,7 @@ export async function initRealtime(httpServer) {
 
 // Chamado pelo controller depois do INSERT.
 // Se o Socket.IO não estiver iniciado (ex.: testes), não faz nada.
-export function emitNovoBebedouro(point) {
+export function emitNewAquapoint(point) {
   if (!io) return;
   io.emit("bebedouro:novo", point);
 }
