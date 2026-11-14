@@ -116,9 +116,16 @@
   .pipe.grpc { stroke: var(--ai); opacity: .8; }
   .pipe.idle { stroke: var(--faint); opacity: .7; stroke-dasharray: 3 4; }
   .pipe.dim { opacity: .12; }
-  .flowdash { fill: none; stroke: #fff; opacity: .8; stroke-linecap: round; stroke-dasharray: 1 17; animation: flow 1s linear infinite; pointer-events: none; }
-  @keyframes flow { from { stroke-dashoffset: 18; } to { stroke-dashoffset: 0; } }
-  @media (prefers-reduced-motion: reduce) { .flowdash { display: none; } }
+  .ball { cursor: pointer; }
+  .ball .hit { fill: transparent; }
+  .ball .core { stroke: var(--bg); stroke-width: 1.5; transition: r .15s; }
+  .ball.ok .core { fill: var(--ok); } .ball.info .core { fill: var(--accent); } .ball.warn .core { fill: var(--warn); } .ball.bad .core { fill: var(--bad); }
+  .ball.paused .core { r: 7.5; stroke: var(--ink); stroke-width: 2; }
+  .tip .kvs { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; padding: 10px 14px 4px; }
+  .tip .kvs span { color: var(--muted); }
+  .dwrap { position: relative; }
+  #balls { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; pointer-events: none; overflow: visible; }
+  #balls .ball { pointer-events: auto; }
   .pipe.lit { opacity: 1; }
   .pipe.lit.bad { stroke: var(--bad); stroke-dasharray: 5 5; }
   .node rect.box { fill: var(--node); stroke: var(--node-line); stroke-width: 1; }
@@ -275,7 +282,7 @@
       <div class="ch">
         <h2>Fluxo de pedidos</h2>
       </div>
-      <div class="flow"><svg id="diagram" viewBox="0 0 900 400" role="img" aria-label="Diagrama do tráfego entre o proxy, o site, a API, a base de dados e o serviço de IA"></svg></div>
+      <div class="flow"><div class="dwrap"><svg id="diagram" viewBox="0 0 900 400" role="img" aria-label="Diagrama do tráfego entre o proxy, o site, a API, a base de dados e o serviço de IA"></svg><svg id="balls" viewBox="0 0 900 400" aria-hidden="true"></svg></div></div>
     </section>
   </div>
 
@@ -283,7 +290,7 @@
     <div class="ch"><h2>Containers</h2></div>
     <div class="scroll">
       <table>
-        <thead><tr><th>Container</th><th>Estado</th><th>IP</th><th>Carga no último minuto</th><th class="r">Ação</th></tr></thead>
+        <thead><tr><th>Container</th><th>Estado</th><th>IP</th><th>Carga no último minuto</th><th class="r">CPU</th><th class="r">RAM</th><th class="r">Ação</th></tr></thead>
         <tbody id="containers"></tbody>
       </table>
     </div>
@@ -354,7 +361,7 @@ function iconKind(service) {
   return 'none';
 }
 const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-const SERVICE_LABEL = { proxy: 'Proxy (nginx)', frontend: 'Site', backend: 'API', db1: 'Base de dados', db2: 'Base de dados', 'ai-service': 'IA (gRPC)', monitor: 'Monitor' };
+const SERVICE_LABEL = { proxy: 'Proxy (nginx)', frontend: 'Site', backend: 'API', db1: 'Base de dados', db2: 'Base de dados', db: 'Base de dados', 'ai-service': 'IA (gRPC)', monitor: 'Monitor' };
 const AI_RESULT = {
   bebedouro: ['ok', 'É bebedouro'],
   nao_bebedouro: ['bad', 'Não é bebedouro'],
@@ -471,7 +478,6 @@ function drawDiagram(svg, data, focus) {
       else cls += ' dim';
     }
     out += `<path class="${cls}" data-edge="${esc(key)}" stroke-width="${w.toFixed(1)}" d="${e.d}"></path>`;
-    if (!focus && e.active) out += `<path class="flowdash" stroke-width="${Math.min(3, Math.max(1.6, w * 0.4)).toFixed(1)}" d="${e.d}" style="animation-delay:-${Date.now() % 1000}ms"></path>`;
   });
 
   const nodeSvg = (key, title, sub, lvl, opts = {}) => {
@@ -579,11 +585,13 @@ function renderBanner(data) {
   const parts = [];
   if (down.length) {
     const names = down.map((c) => shortName(c.name));
-    const svcs = [...new Set(down.map((c) => c.service))];
+    const group = (s) => (/^db\d*$/.test(s) ? 'db' : s);
+    const svcs = [...new Set(down.map((c) => group(c.service)))];
     let txt = `${names.join(', ')} ${down.length === 1 ? 'está parado' : 'estão parados'}.`;
     svcs.forEach((s) => {
-      const alive = data.containers.filter((c) => c.service === s && c.state === 'running').map((c) => shortName(c.name));
+      const alive = data.containers.filter((c) => group(c.service) === s && c.state === 'running').map((c) => shortName(c.name));
       if (alive.length && (s === 'backend' || s === 'frontend' || s === 'ai-service')) txt += ` O tráfego está a ser servido por ${alive.join(' e ')}.`;
+      if (alive.length && s === 'db') txt += ` A base de dados continua disponível através de ${alive.join(' e ')}.`;
       if (!alive.length && s !== 'monitor') txt += ` Não há nenhuma réplica de ${SERVICE_LABEL[s] || s} a correr.`;
     });
     parts.push(`<b>${down.length} ${down.length === 1 ? 'container parado.' : 'containers parados.'}</b> ${esc(txt)}`);
@@ -631,9 +639,11 @@ function renderContainers(data) {
       <td><span class="st ${lvl}">${esc(stateText(c))}</span></td>
       <td>${esc(c.ip || '–')}</td>
       <td>${load}</td>
+      <td class="r">${c.cpu != null ? c.cpu.toLocaleString('pt-PT', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %' : '–'}</td>
+      <td class="r">${c.memMB != null ? fmt(Math.round(c.memMB)) + ' MB' : '–'}</td>
       <td class="r">${action}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="5" class="empty">Não foi possível ler os containers. ${esc(data.dockerError || '')}</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty">Não foi possível ler os containers. ${esc(data.dockerError || '')}</td></tr>`;
 }
 
 function renderRecent(data) {
@@ -660,6 +670,8 @@ function render(data) {
   renderBanner(data);
   renderKpis(data);
   drawDiagram($('diagram'), data);
+  $('balls').setAttribute('viewBox', $('diagram').getAttribute('viewBox'));
+  spawnBalls(data);
   markHover();
   renderHttp(data);
   renderContainers(data);
@@ -671,7 +683,7 @@ function render(data) {
    Caixa com os últimos pedidos de uma réplica (rato por cima ou clique)
    ==================================================================== */
 const tip = $('tip');
-let tipFor = null, pinned = false, mouse = { x: 0, y: 0 };
+let tipFor = null, pinned = false, ballTip = null, mouse = { x: 0, y: 0 };
 
 function showTip(name) {
   if (!last) return;
@@ -704,7 +716,7 @@ function placeTip() {
 }
 function hideTip(force) {
   if (pinned && !force) return;
-  pinned = false; tipFor = null; tip.hidden = true; delete tip.dataset.placed;
+  pinned = false; tipFor = null; ballTip = null; tip.hidden = true; delete tip.dataset.placed;
   markHover();
 }
 function markHover() {
@@ -715,7 +727,7 @@ function hoverTarget(e) { const el = e.target.closest('[data-replica]'); return 
 [$('diagram'), $('containers')].forEach((area) => {
   area.addEventListener('mousemove', (e) => {
     mouse = { x: e.clientX, y: e.clientY };
-    if (pinned) return;
+    if (pinned || ballTip) return;
     if (e.target.closest('button')) { hideTip(); return; }
     const name = hoverTarget(e);
     if (name) { if (name !== tipFor) showTip(name); else placeTip(); } else hideTip();
@@ -780,7 +792,11 @@ function stagesOf(r, p) {
 
 function openModal(i) {
   if (!last || !last.recent[i]) return;
-  modalReq = last.recent[i];
+  openModalReq(last.recent[i]);
+}
+function openModalReq(req) {
+  if (!last || !req) return;
+  modalReq = req;
   modalData = last; // fica fixo enquanto o modal está aberto
   const r = modalReq;
   $('mTitle').innerHTML = `<span class="mono">${esc(r.method)} ${esc(r.uri)}</span><span class="code ${codeClass(r.status)}">${r.status}</span>`;
@@ -806,7 +822,7 @@ async function playPath() {
   $('wf').innerHTML = stages.map(([l, sub, v, col]) => { const left = (acc / total) * 100; acc += v; return `<div class="wfrow"><div class="lbl">${esc(l)}<small>${esc(sub)}</small></div><div class="track"><div class="bar" style="left:${left}%;width:${(v / total) * 100}%;background:${col}"></div></div><div class="ms">${fmt(v)} ms</div></div>`; }).join('');
   $('wfTotal').textContent = `${fmt(ms(r.rt))} ms`;
   $('wfSummary').textContent = r.status >= 500 ? 'O pedido falhou no servidor.' : r.ai && r.ai.result === 'indisponivel' ? 'A IA não respondeu a tempo; o ponto fica pendente para revisão.' : 'Pedido concluído.';
-  $('wfNote').textContent = p.edges.some((e) => e.kind === 'sql') ? `A ligação à base de dados é deduzida: os pedidos à API usam o nó ativo (${(activeDb(data.db || []) || {}).node || '–'}).` : '';
+  $('wfNote').textContent = '';
 
   for (const e of p.edges) {
     if (my !== runId) return;
@@ -834,6 +850,112 @@ function travel(svg, path, color, dur) {
     };
     requestAnimationFrame(step);
   });
+}
+
+/* ====================================================================
+   Bolas no Fluxo de pedidos: cada bola é um pedido real do log
+   ==================================================================== */
+const ballLayer = $('balls');
+const balls = [];
+let prevKeys = null;
+const HOP_MS = 2200, SLOW = 0.25, MAX_BALLS = 60, MAX_PER_POLL = 30;
+let flowHover = false; // com o rato no diagrama, as bolas andam em câmara lenta
+$('diagram').parentNode.addEventListener('mouseenter', () => { flowHover = true; });
+$('diagram').parentNode.addEventListener('mouseleave', () => { flowHover = false; });
+const reqKey = (r) => `${r.t}|${r.method}|${r.uri}|${r.replica}|${r.status}|${r.rt}`;
+
+function countKeys(list) {
+  const m = new Map();
+  list.forEach((r) => { const k = reqKey(r); m.set(k, (m.get(k) || 0) + 1); });
+  return m;
+}
+
+function spawnBalls(data) {
+  const src = data.fresh || data.recent || [];
+  const now = countKeys(src);
+  if (prevKeys === null || reduceMotion) { prevKeys = now; return; } // o histórico antigo não é animado
+  const fresh = [];
+  const seen = new Map();
+  const ordered = data.fresh ? src : [...src].reverse(); // do mais antigo para o mais recente
+  ordered.forEach((r) => {
+    const k = reqKey(r);
+    const n = (seen.get(k) || 0) + 1; seen.set(k, n);
+    if (n > (prevKeys.get(k) || 0)) fresh.push(r);
+  });
+  prevKeys = now;
+  let list = fresh.filter((r) => r.replica);
+  if (list.length > MAX_PER_POLL) { const step = list.length / MAX_PER_POLL; list = Array.from({ length: MAX_PER_POLL }, (_, i) => list[Math.floor(i * step)]); }
+  const gap = list.length > 1 ? 1800 / list.length : 0;
+  list.forEach((r, i) => setTimeout(() => launchBall(r), i * gap));
+}
+
+function launchBall(r) {
+  if (!last) return;
+  const hops = pathOf(r, last).edges;
+  if (!hops.length) return;
+  while (balls.length >= MAX_BALLS) removeBall(balls[0]);
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('class', `ball ${codeClass(r.status)}`);
+  g.innerHTML = '<circle class="hit" r="16"></circle><circle class="core" r="5"></circle>';
+  const b = { r, hops, hop: 0, k: 0, paused: false, g };
+  g.addEventListener('mouseenter', (e) => { b.paused = true; g.classList.add('paused'); mouse = { x: e.clientX, y: e.clientY }; showBallTip(b); });
+  g.addEventListener('mousemove', (e) => { mouse = { x: e.clientX, y: e.clientY }; placeTip(); });
+  g.addEventListener('mouseleave', () => { b.paused = false; g.classList.remove('paused'); if (ballTip === b) hideTip(true); });
+  g.addEventListener('click', (e) => { e.stopPropagation(); hideTip(true); lastEye = null; openModalReq(b.r); });
+  ballLayer.appendChild(g);
+  balls.push(b);
+  placeBall(b);
+  if (balls.length === 1) requestAnimationFrame(tickBalls);
+}
+
+function removeBall(b) {
+  const i = balls.indexOf(b);
+  if (i >= 0) balls.splice(i, 1);
+  b.g.remove();
+  if (ballTip === b) hideTip(true);
+}
+
+function placeBall(b) {
+  const e = b.hops[b.hop];
+  const path = $('diagram').querySelector(`[data-edge="${CSS.escape(e.a + '>' + e.b)}"]`);
+  if (!path) return false;
+  const pt = path.getPointAtLength(path.getTotalLength() * b.k);
+  b.g.setAttribute('transform', `translate(${pt.x.toFixed(1)},${pt.y.toFixed(1)})`);
+  return true;
+}
+
+let lastTick = 0;
+function tickBalls(now) {
+  const dt = lastTick ? Math.min(50, now - lastTick) : 16;
+  lastTick = now;
+  [...balls].forEach((b) => {
+    if (b.paused) return;
+    b.k += (dt / HOP_MS) * (flowHover ? SLOW : 1);
+    if (b.k >= 1) { b.hop++; b.k = 0; }
+    if (b.hop >= b.hops.length || !placeBall(b)) removeBall(b);
+  });
+  if (balls.length) requestAnimationFrame(tickBalls); else lastTick = 0;
+}
+
+function showBallTip(b) {
+  const r = b.r;
+  ballTip = b; tipFor = null; pinned = false;
+  const p = pathOf(r, last);
+  const db = p.edges.find((e) => e.kind === 'sql');
+  const rows = [
+    ['Hora', hhmmss(r.t)],
+    ['Réplica', shortName(r.replica) || '–'],
+    ['Tempo', `${fmt(ms(r.rt))} ms`],
+  ];
+  if (db) rows.push(['Base de dados', db.b.replace(/^db:/, '')]);
+  if (r.ai) rows.push(['IA', `${(AI_RESULT[r.ai.result] || ['', r.ai.result])[1]}${r.ai.ai ? ' · ' + shortName(r.ai.ai) : ''} · ${fmt(r.ai.ms)} ms`]);
+  tip.innerHTML = `
+    <div class="th"><div><b class="mono">${esc(r.method)} ${esc(r.uri)}</b></div><span class="code ${codeClass(r.status)}">${r.status}</span></div>
+    <div class="kvs">${rows.map(([k, v]) => `<span>${esc(k)}</span><div>${esc(v)}</div>`).join('')}</div>
+    <div class="ft">Clica na bola para ver o percurso completo.</div>`;
+  tip.classList.remove('pinned');
+  tip.hidden = false;
+  placeTip();
 }
 
 $('recent').addEventListener('click', (e) => {

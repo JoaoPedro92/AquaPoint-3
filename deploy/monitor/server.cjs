@@ -39,6 +39,39 @@ function uptimePt(status) {
   return m[1];
 }
 
+// ---------- CPU e RAM de cada container ----------
+// Lido do Docker em segundo plano. O CPU % usa a mesma fórmula do `docker stats`:
+// diferença entre a leitura atual e a anterior (cerca de 1 s antes), feita pelo próprio Docker.
+const usage = new Map(); // id -> { cpu, memMB, total, system }
+
+async function sampleUsage() {
+  try {
+    const list = await docker('GET', `/containers/json?filters=${encodeURIComponent(JSON.stringify({ label: [`com.docker.compose.project=${PROJECT}`] }))}`);
+    const alive = new Set(list.map((c) => c.Id));
+    for (const id of usage.keys()) if (!alive.has(id)) usage.delete(id);
+    await Promise.all(list.map(async (c) => {
+      const s = await docker('GET', `/containers/${c.Id}/stats?stream=false`).catch(() => null);
+      if (!s || !s.cpu_stats) return;
+      const total = s.cpu_stats.cpu_usage ? s.cpu_stats.cpu_usage.total_usage : 0;
+      const system = s.cpu_stats.system_cpu_usage || 0;
+      const cpus = s.cpu_stats.online_cpus || (s.cpu_stats.cpu_usage.percpu_usage || []).length || 1;
+      const prev = usage.get(c.Id);
+      const pre = s.precpu_stats || {};
+      const preTotal = pre.cpu_usage ? pre.cpu_usage.total_usage : 0;
+      const preSystem = pre.system_cpu_usage || 0;
+      let cpu = null;
+      if (preSystem && system > preSystem && total >= preTotal) cpu = ((total - preTotal) / (system - preSystem)) * cpus * 100;
+      else if (prev && system > prev.system && total >= prev.total) cpu = ((total - prev.total) / (system - prev.system)) * cpus * 100;
+      const m = s.memory_stats || {};
+      const st = m.stats || {};
+      const memBytes = m.usage != null ? m.usage - Math.min(m.usage, st.inactive_file ?? st.total_inactive_file ?? 0) : null;
+      usage.set(c.Id, { cpu: cpu ?? (prev ? prev.cpu : null), memMB: memBytes != null ? memBytes / 1048576 : null, total, system });
+    }));
+  } catch { /* sem acesso ao Docker: as colunas ficam vazias */ }
+  setTimeout(sampleUsage, 1000);
+}
+sampleUsage();
+
 async function getContainers() {
   const filters = encodeURIComponent(JSON.stringify({ label: [`com.docker.compose.project=${PROJECT}`] }));
   const list = await docker('GET', `/containers/json?all=1&filters=${filters}`);
@@ -58,6 +91,8 @@ async function getContainers() {
         uptime: c.State === 'running' ? uptimePt(c.Status) : null,
         ip: (nets[0] && nets[0].IPAddress) || null,
         protected: PROTECTED.includes(service),
+        cpu: c.State === 'running' && usage.get(c.Id) ? usage.get(c.Id).cpu : null,
+        memMB: c.State === 'running' && usage.get(c.Id) ? usage.get(c.Id).memMB : null,
       };
     })
     .sort((a, b) => a.service.localeCompare(b.service) || a.replica - b.replica);
@@ -211,6 +246,11 @@ async function buildStats() {
       const replica = replicaOf(e);
       return { t: e.t, method: e.method, uri: e.uri, status: e.status, rt: e.rt, replica, ai: aiDuring(e, replica) };
     }),
+    // pedidos dos últimos 4 s, para as bolas do diagrama (o teste de carga gera mais do que 40 de uma vez)
+    fresh: entries.filter((e) => now - e.t <= 4).slice(-400).map((e) => {
+      const replica = replicaOf(e);
+      return { t: e.t, method: e.method, uri: e.uri, status: e.status, rt: e.rt, replica, ai: aiDuring(e, replica) };
+    }),
     ai: {
       lastMinute: aiLastMinute.length,
       unavailableLastMinute: aiLastMinute.filter((e) => e.result === 'indisponivel').length,
@@ -245,8 +285,9 @@ function getOnce(p) {
 
 async function runLoadTest() {
   const jobs = [];
-  for (const [target, paths] of Object.entries(LOAD_PATHS)) {
-    for (let i = 0; i < LOAD_PER_TARGET; i++) jobs.push({ target, path: paths[i % paths.length] });
+  // intercala frontend e backend para os dois receberem carga ao mesmo tempo
+  for (let i = 0; i < LOAD_PER_TARGET; i++) {
+    for (const [target, paths] of Object.entries(LOAD_PATHS)) jobs.push({ target, path: paths[i % paths.length] });
   }
   const result = { frontend: { ok: 0, failed: 0 }, backend: { ok: 0, failed: 0 } };
   const start = Date.now();
